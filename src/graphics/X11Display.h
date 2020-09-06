@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,6 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
 
-struct SDL_SysWMinfo;
-
 namespace avg {
 
 class AVG_API X11Display: public Display
@@ -44,14 +42,9 @@ public:
  
 protected:
     virtual float queryPPMM();
-    virtual IntPoint queryScreenResolution();
-    virtual float queryRefreshRate();
 };
 
-::Display* getX11Display(const SDL_SysWMinfo* pSDLWMInfo);
-
-Window createChildWindow(const SDL_SysWMinfo* pSDLWMInfo, XVisualInfo* pVisualInfo,
-        const IntPoint& windowSize, const Colormap& colormap);
+::Display* getX11Display();
 
 }
 #endif

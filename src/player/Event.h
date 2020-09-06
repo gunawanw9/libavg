@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -47,8 +47,10 @@ class AVG_API Event {
             CURSOR_DOWN,
             CURSOR_OVER,  
             CURSOR_OUT,
+            MOUSE_WHEEL,
             CUSTOM_EVENT,
-            QUIT 
+            QUIT,
+            UNKNOWN
         };
         enum Source {MOUSE=1, TOUCH=2, TRACK=4, TANGIBLE=8, PEN=16, CUSTOM=32, NONE=64};
     
@@ -96,4 +98,4 @@ struct isEventAfter:std::binary_function<EventPtr, EventPtr, bool> {
 };
 
 }
-#endif //_Event_H_
+#endif

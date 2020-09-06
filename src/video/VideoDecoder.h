@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,6 @@
 
 #include "VideoInfo.h"
 
-#include "../audio/AudioParams.h"
 #include "../graphics/PixelFormat.h"
 
 #include "WrapFFMpeg.h"
@@ -37,13 +36,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-struct vdpau_render_state;
-
 namespace avg {
 
 class Bitmap;
 typedef boost::shared_ptr<Bitmap> BitmapPtr;
-class VDPAUDecoder;
+struct AudioParams;
 
 enum FrameAvailableCode {
     FA_NEW_FRAME, FA_USE_LAST_FRAME, FA_STILL_DECODING
@@ -59,8 +56,7 @@ class AVG_API VideoDecoder
         enum DecoderState {CLOSED, OPENED, DECODING};
         VideoDecoder();
         virtual ~VideoDecoder();
-        virtual void open(const std::string& sFilename, bool bUseHardwareAcceleration, 
-                bool bEnableSound);
+        virtual void open(const std::string& sFilename, bool bEnableSound);
         virtual void startDecoding(bool bDeliverYCbCr, const AudioParams* pAP);
         virtual void close();
         virtual DecoderState getState() const;
@@ -83,12 +79,12 @@ class AVG_API VideoDecoder
         virtual bool isEOF() const = 0;
         virtual void throwAwayFrame(float timeWanted) = 0;
 
-        static void logConfig();
+        // Prevents different decoder instances from executing open/close simultaneously
+        static boost::mutex s_OpenMutex;
 
     protected:
         int getNumFrames() const;
         AVFormatContext* getFormatContext();
-        bool usesVDPAU() const;
         AVCodecContext const * getCodecContext() const;
         AVCodecContext * getCodecContext();
         void allocFrameBmps(std::vector<BitmapPtr>& pBmps);
@@ -100,7 +96,7 @@ class AVG_API VideoDecoder
 
     private:
         void initVideoSupport();
-        int openCodec(int streamIndex, bool bUseHardwareAcceleration);
+        int openCodec(int streamIndex);
         float getDuration(StreamSelect streamSelect) const;
         PixelFormat calcPixelFormat(bool bUseYCbCr);
         std::string getStreamPF() const;
@@ -114,17 +110,12 @@ class AVG_API VideoDecoder
         AVStream * m_pVStream;
         PixelFormat m_PF;
         IntPoint m_Size;
-#ifdef AVG_ENABLE_VDPAU
-        VDPAUDecoder* m_pVDPAUDecoder;
-#endif
         
         // Audio
         int m_AStreamIndex;
         AVStream * m_pAStream;
         
         static bool s_bInitialized;
-        // Prevents different decoder instances from executing open/close simultaneously
-        static boost::mutex s_OpenMutex;   
 };
 
 typedef boost::shared_ptr<VideoDecoder> VideoDecoderPtr;

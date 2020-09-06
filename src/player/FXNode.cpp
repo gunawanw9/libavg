@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 
 #include "../base/ObjectCounter.h"
 #include "../graphics/GLContext.h"
+#include "../graphics/GPUFilter.h"
+
 
 namespace avg {
 
@@ -65,21 +67,21 @@ void FXNode::setSize(const IntPoint& newSize)
     }
 }
 
-void FXNode::apply(GLTexturePtr pSrcTex)
+void FXNode::apply(GLContext* pContext, GLTexturePtr pSrcTex)
 {
     // blt overwrites everything, so no glClear necessary before.
-    GLContext::getCurrent()->setBlendMode(GLContext::BLEND_COPY);
-    m_pFilter->apply(pSrcTex);
+    pContext->setBlendMode(GLContext::BLEND_COPY);
+    m_pFilter->apply(pContext, pSrcTex);
 }
 
-GLTexturePtr FXNode::getTex()
+GLTexturePtr FXNode::getTex(GLContext* pContext)
 {
-    return m_pFilter->getDestTex();
+    return m_pFilter->getDestTex(pContext);
 }
 
-BitmapPtr FXNode::getImage()
+BitmapPtr FXNode::getImage(GLContext* pContext)
 {
-    return m_pFilter->getImage();
+    return m_pFilter->getImage(pContext);
 }
 
 FRect FXNode::getRelDestRect() const
@@ -97,9 +99,9 @@ void FXNode::resetDirty()
     m_bDirty = false;
 }
 
-FBOPtr FXNode::getFBO()
+FBOPtr FXNode::getFBO(GLContext* pContext)
 {
-    return m_pFilter->getFBO();
+    return m_pFilter->getFBO(pContext);
 }
 
 void FXNode::setDirty()
@@ -110,7 +112,8 @@ void FXNode::setDirty()
 void FXNode::checkGLES() const
 {
     if (!m_bSupportsGLES && GLContext::getCurrent()->isGLES()) {
-        throw Exception(AVG_ERR_UNSUPPORTED, "This effect is unsupported under OpenGL ES.");
+        throw Exception(AVG_ERR_UNSUPPORTED,
+                "This effect is unsupported under OpenGL ES.");
     }
 }
 

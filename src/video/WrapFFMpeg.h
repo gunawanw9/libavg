@@ -1,6 +1,6 @@
 //
-//  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  libavg - Media Playback Engine.
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,8 @@
 
 #ifndef _WrapFFMpeg_H_
 #define _WrapFFMpeg_H_
+
+#include <string>
 
 #include "../avgconfigwrapper.h"
 
@@ -47,47 +49,29 @@ extern "C" {
 #include <libavutil/pixdesc.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/opt.h>
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
-#define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
-#endif
-
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-  #define SAMPLE_FMT_S16 AV_SAMPLE_FMT_S16
-  #define SAMPLE_FMT_FLT AV_SAMPLE_FMT_FLT
-  #define SAMPLE_FMT_DBL AV_SAMPLE_FMT_DBL
-  #define SAMPLE_FMT_S32 AV_SAMPLE_FMT_S32
-  #define SAMPLE_FMT_U8 AV_SAMPLE_FMT_U8
-  #define SAMPLE_FMT_S16P AV_SAMPLE_FMT_S16P
-  #define SAMPLE_FMT_FLTP AV_SAMPLE_FMT_FLTP
-  #define SampleFormat AVSampleFormat
-#endif
-
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 00)
-  #define AV_CODEC_ID_MPEG1VIDEO CODEC_ID_MPEG1VIDEO 
-  #define AV_CODEC_ID_MPEG2VIDEO CODEC_ID_MPEG2VIDEO
-  #define AV_CODEC_ID_H264 CODEC_ID_H264
-  #define AV_CODEC_ID_WMV3 CODEC_ID_WMV3
-  #define AV_CODEC_ID_VC1 CODEC_ID_VC1
-  #define AV_CODEC_ID_MJPEG CODEC_ID_MJPEG
-  #define AV_CODEC_ID_NONE CODEC_ID_NONE
-#endif
+#include <libavutil/error.h>
 
 #ifndef URL_WRONLY
         #define url_fopen avio_open
         #define url_fclose avio_close
         #define URL_WRONLY AVIO_FLAG_WRITE
 #endif
-#ifdef HAVE_LIBAVRESAMPLE_AVRESAMPLE_H
-    #include <libavresample/avresample.h>
-    #include <libavresample/version.h>
-#endif
+#include <libswresample/swresample.h>
+#include <libswresample/version.h>
 }
 
+// Old ffmpeg has PixelFormat, new ffmpeg uses AVPixelFormat.
+// Intermediate versions define PixelFormat in terms of AVPixelFormat for compatibility.
+// libavg also defines avg::PixelFormat.
 #ifdef PixelFormat
-#undef PixelFormat
-#else
-#define AVPixelFormat ::PixelFormat
+    // In this case, PixelFormat is #defined and collides with avg::PixelFormat.
+    // AVPixelFormat is also defined.
+    #undef PixelFormat
 #endif
+
+namespace avg
+{
+    const std::string getAVErrorString(int errNum);
+}
 
 #endif

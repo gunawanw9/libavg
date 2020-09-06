@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,6 @@
 #include "../api.h"
 #include "DivNode.h"
 
-#include <string>
-
 namespace avg {
 
 class AVG_API CanvasNode : public DivNode
@@ -34,7 +32,7 @@ class AVG_API CanvasNode : public DivNode
     public:
         static void registerType();
         
-        CanvasNode(const ArgList& args);
+        CanvasNode(const ArgList& args, const std::string& sPublisherName);
         virtual ~CanvasNode();
 
         virtual std::string getEffectiveMediaDir();

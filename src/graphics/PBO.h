@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,15 +25,16 @@
 #include "../api.h"
 #include "TextureMover.h"
 
-#include "Bitmap.h"
 #include "OGLHelper.h"
-#include "GLTexture.h"
-
-#include "../base/GLMHelper.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace avg {
+
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+class GLTexture;
+typedef boost::shared_ptr<GLTexture> GLTexturePtr;
 
 class AVG_API PBO: public TextureMover {
 public:

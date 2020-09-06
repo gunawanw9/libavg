@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,22 +24,23 @@
 
 #include "../api.h"
 #include "../base/Queue.h"
-#include "../graphics/Bitmap.h"
 
 #include "../audio/AudioMsg.h"
 
 #include <boost/shared_ptr.hpp>
+#include <vector>
 
-struct vdpau_render_state;
 struct AVPacket;
 
 namespace avg {
+
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
 
 class AVG_API VideoMsg: public AudioMsg {
 public:
     VideoMsg();
     void setFrame(const std::vector<BitmapPtr>& pBmps, float frameTime);
-    void setVDPAUFrame(vdpau_render_state* pRenderState, float frameTime);
     void setPacket(AVPacket* pPacket);
 
     virtual ~VideoMsg();
@@ -49,16 +50,11 @@ public:
     AVPacket* getPacket();
     void freePacket();
 
-    vdpau_render_state* getRenderState();
-
 private:
     // FRAME
     std::vector<BitmapPtr> m_pBmps;
     float m_FrameTime;
 
-    // VDPAU_FRAME
-    vdpau_render_state* m_pRenderState;
-    
     // PACKET
     AVPacket * m_pPacket;
 };

@@ -12,13 +12,6 @@ Misc. Classes
         Bitmaps (e.g. width>65536) are supported as long as they fit into memory.
 
         The layout of the pixels in the bitmap is described by its pixel format.
-        The names for pixel format constants are confusing. They try to follow logic,
-        but it's a bit elusive: In many cases, each component is described by a single 
-        letter indicating the component's role in the pixel and a number indicating the 
-        number of bits used for this component.
-        Components are named in the order they appear in memory. In the cases where
-        the name doesn't follow this logic, reasons for the name are usually historical or
-        by convention.
         You can receive a complete list of all supported pixel formats by calling
         :py:func:`avg.getSupportedPixelFormats()`.
         The pixel formats are:
@@ -108,11 +101,18 @@ Misc. Classes
             Returns one image pixel as a color tuple. This should only be used
             for single pixels, as it is very slow.
 
-        .. py:method:: getPixels() -> string
+        .. py:method:: getPixels(copyData = True) -> string
 
-            Returns the raw pixel data in the bitmap as a python string. This
-            method can be used to interface to the python imaging library PIL
-            (http://www.pythonware.com/products/pil/).
+            Returns the raw pixel data in the bitmap as a python buffer. This
+            method can be used to interface to external libraries such as the python
+            imaging library PIL (http://www.pythonware.com/products/pil/).
+
+            :param bool copyData:
+            
+                Whether to copy the bitmap data into the returned python buffer or return
+                a view to the memory in the bitmap. Note that the second variant 
+                (``copyData = False``) is dangerous, since referencing the buffer after
+                the bitmap is deleted will cause a crash.
 
         .. py:method:: getResized(newSize) -> Bitmap
 
@@ -152,10 +152,10 @@ Misc. Classes
         The instance is accessed by :py:meth:`get`.
 
         .. py:method:: loadBitmap(fileName, callback, pixelformat=NO_PIXELFORMAT)
-        
+
             Asynchronously loads a file into a Bitmap. The provided callback is invoked
-            with a Bitmap instance as argument in case of a successful load or with a
-            RuntimeError exception instance in case of failure. The optional parameter
+            with a Bitmap instance as argument in case of a successful load or with an
+            :py:class:`avg.Exception` instance in case of failure. The optional parameter
             :py:attr:`pixelformat` can be used to convert the bitmap to a specific format
             asynchronously as well.
 
@@ -169,6 +169,48 @@ Misc. Classes
             thread. This should generally be less than the number of logical cores 
             available.
 
+
+    .. autoclass:: Color
+
+        A color in the rgb colorspace. libavg :py:class:`Colors` can be constructed either
+        from tuples or using html-like string syntax. Colors can be animated, and any
+        interpolation between two colors is performed in the CIE-Lch color space for best
+        results (See http://www.stuartdenman.com/improved-color-blending/).
+
+        .. py:method:: __init__(string)
+
+            Constructs a color from a three- or six-character hex code (``F80`` and
+            ``FF8800`` are equivalent colors).
+
+        .. py:method:: __init__(r,g,b)
+
+            Constructs a color from three channel values in the range 0..255.
+
+        .. py:method:: __init__((r,g,b))
+
+            Constructs a color from an rgb tuple.
+
+        .. py:attribute:: r
+
+            Red component of the color (ro).
+
+        .. py:attribute:: g
+
+            Green component of the color (ro).
+
+        .. py:attribute:: b
+
+            Blue component of the color (ro).
+
+        .. py:classmethod:: mix(color1, color2, ratio) -> color
+
+            Creates a color that is a mix of the two colors passed as parameters.
+
+        .. py:classmethod:: fromLch(l, c, h) -> color
+
+            Creates a color from values in Lch color space.
+
+
     .. autoclass:: CubicSpline(controlpoints)
 
         Class that generates a smooth curve between control points using cubic 
@@ -177,11 +219,11 @@ Misc. Classes
 
         :param controlpoints:
 
-        A list of 2D coordinates. The x coordinates must be in increasing order.
+            A list of 2D coordinates. The x coordinates must be in increasing order.
 
         .. py:method:: interpolate(x) -> y
 
-        Takes an x coordinate and delivers a corresponding y coordinate. 
+            Takes an x coordinate and delivers a corresponding y coordinate. 
 
     
     .. autoclass:: FontStyle(font="sans", variant="", color="FFFFFF", fontsize=15, indent=0, linespacing=-1, alignment="left", wrapmode="word", justify=False, letterspacing=0, aagamma=1, hint=True)
@@ -191,6 +233,30 @@ Misc. Classes
         (:py:attr:`font`, :py:attr:`fontsize`, etc.) in one line of code. The attributes
         correspond to the :py:class:`WordsNode` attributes; refer to the 
         :py:class:`WordsNode` reference for descriptions.    
+
+
+    .. autoclass:: ImageCache
+
+        libavg's global two-level cache of images in CPU (general system) and GPU
+        (graphics card) memory. Access this class using the :samp:`player.cache`
+        property. The cache is used for all images loaded from files in textures,
+        including :py:class:`ImageNode` images, :py:class:`VectorNode` textures and fill
+        textures, and all :py:class:`RasterNode` mask textures. :py:class:`Bitmap`
+        objects are not cached.
+
+        .. py:attribute:: capacity
+
+            The capacity of the cache as a tuple (cpu, gpu) in bytes. The capacity can
+            also be set using :samp:`avgrc`. Default CPU capacity is one-quarter of
+            physical RAM, default GPU capacity is 16 megabytes.
+
+        .. py:method:: getNumImages -> (cpu, gpu)
+
+            Returns the number of images loaded.
+
+        .. py:method:: getMemUsed -> (cpu, gpu)
+
+            Returns the number of bytes used by images.
 
 
     .. autoclass:: Logger
@@ -321,6 +387,8 @@ Misc. Classes
                 General libavg playback messages.
             :py:const:`SHADER`
                 Shader compiler messages.
+            :py:const:`VIDEO`
+                Audio/Video related messages.
 
        **Severities**
 
@@ -386,7 +454,7 @@ Misc. Classes
             being the positive x axis. Angle is clockwise (assuming that y points
             downward).
 
-        .. py:method isInPolygon(poly) -> bool
+        .. py:method:: isInPolygon(poly) -> bool
 
             Checks if the point is inside a polygon.
 
@@ -444,40 +512,40 @@ Misc. Classes
         Exposes version data, including the specs of the builder.
 
         .. py:attribute:: full
-        
+
         Full string containing a compact form of branch and revision number (if the
         build doesn't come from an exported tree)
-        
+
         .. py:attribute:: release
-        
+
         String representation in the form `major.minor.micro`
-        
+
         .. py:attribute:: major
-        
+
         Integer component of the release version (major)
 
         .. py:attribute:: minor
-        
+
         Integer component of the release version (minor)
 
         .. py:attribute:: micro
-        
+
         Integer component of the release version (micro)
-        
+
         .. py:attribute:: revision
-        
+
         Revision number, if applicable, or 0
-        
+
         .. py:attribute:: branchurl
-        
+
         Full URL path that represents the branch root, if applicable, or empty string
-        
+
         .. py:attribute:: builder
-        
+
         String representation in the form of `user@hostname machinespecs`
-        
+
         .. py:attribute:: buildtime
-        
+
         ISO timestamp representation of the build
 
 
@@ -600,7 +668,7 @@ Misc. Classes
             state, actually changing the state, calling the transition callback and
             calling the enter callback for the new state.
 
-            Raises a :py:class:`RuntimeError` if :py:attr:`newState` is not a valid state
+            Raises a :py:class:`avg.Exception` if :py:attr:`newState` is not a valid state
             or if there is no transition defined from the current state to 
             :py:attr:`newState`.
 
@@ -629,10 +697,9 @@ Misc. Classes
         A general purpose persistent object.
         Its state is defined in the :py:attr:`data` attribute and pickled
         from/to a store file.
-        
 
         :param string storeFile:
-        
+
             Full path of the store file that is used to store and retrieve a
             serialized version of the data.
 
@@ -650,7 +717,7 @@ Misc. Classes
         :param bool autoCommit:
 
             If True, the :py:attr:`commit` method is registered as an `atexit` function.
-            
+
         .. py:attribute:: data
 
             State of the persistent object.
@@ -681,3 +748,65 @@ Misc. Classes
         
             Name of the file store file. `.pkl` will be added as extension.
 
+
+.. automodule:: libavg.sprites
+    :no-members:
+
+    .. autoclass:: Spritesheet(dataFName)
+
+        A sprite sheet is a collection of (possibly animated) images all loaded from one
+        large image file (the 'atlas'). A sample can be found at `src/samples/sprite.py`.
+
+        :param string dataFName:
+
+            Name of an xml file that stores sprite information such as the name of the
+            aggregate image and the locations of the individual sprites in the atlas.
+            libavg expects files in Starling format.
+
+    .. autoclass:: Sprite(spritesheet, spriteName)
+
+        A single-image sprite generated from a sprite sheet.
+
+        :param string spriteName:
+
+            Name of the entry in the data file that specifies where in the atlas the
+            sprite is located.
+
+
+    .. autoclass:: AnimatedSprite(spritesheet, spriteName[, loop=False, fps=30])
+
+        A multi-frame sprite generated from a sprite sheet. An :py:class:`AnimatedSprite`
+        can be used like a small high-performance video, with playback, pause and seek
+        functionality.
+
+        :param string spriteName:
+
+            Prefix string for the data file entries that correspond to the individual
+            sprite frames. Any entries that consist of this prefix followed by numbers
+            digits are added to this sprite.
+
+        .. py:attribute:: curFrameNum
+
+            Number of the frame currently shown. To display a different frane, set this
+            attribute.
+
+        .. py:attribute:: fps
+
+            Speed in frames per second that the sprite should use for playback.
+
+        .. py:attribute:: loop
+
+            :py:const:`True` if the sprite should loop endlessly, :py:const:`False`
+            otherwise.
+
+        .. py:attribute:: numFrames
+
+            Number of frames in the sprite. Read-only.
+
+        .. py:method:: play()
+
+            Starts playback.
+
+        .. py:method:: pause()
+
+            Stops playback.

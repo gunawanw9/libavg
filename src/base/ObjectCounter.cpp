@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,7 +21,7 @@
 
 #include "ObjectCounter.h"
 #include "Exception.h"
-#include "Logger.h"
+#include "ThreadHelper.h"
 
 #include <boost/thread/mutex.hpp>
 
@@ -95,7 +95,7 @@ void ObjectCounter::incRef(const std::type_info* pType)
 void ObjectCounter::decRef(const std::type_info* pType)
 {
 #ifdef DEBUG_ALLOC
-    if (!this) {
+    if (s_bDeleted) {
         // This happens if there are counted static objects that are deleted after 
         // s_pObjectCounter has been deleted.
         return;

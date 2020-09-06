@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 #include "Player.h"
 #include "Contact.h"
 #include "CursorEvent.h"
+#include "InputDevice.h"
 
 #include "../base/Exception.h"
 #include "../base/OSHelper.h"
@@ -147,6 +148,7 @@ void EventDispatcher::testAddContact(EventPtr pEvent)
                     }
                 }
                 break;
+            case Event::MOUSE_WHEEL:
             case Event::CUSTOM_EVENT:
                 break;
             default:

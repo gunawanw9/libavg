@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,6 @@
 
 #include <string>
 #include <sstream>
-#include <typeinfo>
-#include <iostream>
 #include <vector>
 
 #ifdef __GNUC__
@@ -112,7 +110,11 @@ template<class T>
 void fromString(const std::string& s, T& result)
 {
     std::stringstream stream(s);
-    bool bOk = (stream >> result) != 0;
+
+#ifdef WIN32
+#pragma warning(disable:4800)
+#endif
+    bool bOk = bool(stream >> result) != 0;
     if (bOk) {
         std::string sLeftover;
         stream >> sLeftover;

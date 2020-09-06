@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -188,7 +188,7 @@ void FilterGauss::calcKernel()
     int intRadius = int(ceil(m_Radius));
     m_KernelWidth = intRadius*2+1;
     for (int i = 0; i <= intRadius; ++i) {
-        FloatKernel[intRadius+i] = float(exp(-i*i/m_Radius-1)/sqrt(2*PI));
+        FloatKernel[intRadius+i] = float(exp(-i*i/m_Radius-1)/sqrt(2*M_PI));
         FloatKernel[intRadius-i] = FloatKernel[intRadius+i];
         Sum += FloatKernel[intRadius+i];
         if (i != 0) {

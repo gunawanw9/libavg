@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -34,9 +34,9 @@ public:
     GPURGB2YUVFilter(const IntPoint& size);
     virtual ~GPURGB2YUVFilter();
     
-    virtual void applyOnGPU(GLTexturePtr pSrcTex);
+    virtual void applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex);
 
-    BitmapPtr getResults();
+    BitmapPtr getResults(GLContext* pContext);
 
 private:
 };

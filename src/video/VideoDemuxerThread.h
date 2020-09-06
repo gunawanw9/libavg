@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,18 +23,18 @@
 #define _VideoDemuxerThread_H_
 
 #include "../api.h"
-#include "FFMpegDemuxer.h"
 #include "VideoMsg.h"
+#include "WrapFFMpeg.h"
 
 #include "../base/WorkerThread.h"
 #include "../base/Command.h"
 
 #include <boost/thread.hpp>
 
-#include <string>
-#include <vector>
-
 namespace avg {
+
+class FFMpegDemuxer;
+typedef boost::shared_ptr<FFMpegDemuxer> FFMpegDemuxerPtr;
 
 class AVG_API VideoDemuxerThread: public WorkerThread<VideoDemuxerThread> {
     public:

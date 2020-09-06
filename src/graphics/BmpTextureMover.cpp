@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,7 @@ void BmpTextureMover::moveBmpToTexture(BitmapPtr pBmp, GLTexture& tex)
     AVG_ASSERT(pBmp->getSize() == tex.getSize());
     AVG_ASSERT(getSize() == pBmp->getSize());
     AVG_ASSERT(pBmp->getPixelFormat() == getPF());
-    tex.activate();
+    tex.activate(WrapMode());
     unsigned char * pStartPos = pBmp->getPixels();
     IntPoint size = tex.getSize();
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,11 +26,9 @@
 #include "InputDevice.h"
 
 #include "../base/GLMHelper.h"
-#include "../base/ConfigMgr.h"
 
 #include <boost/thread.hpp>
 #include <map>
-#include <set>
 
 typedef boost::shared_ptr<boost::mutex> MutexPtr;
 
@@ -48,7 +46,6 @@ class AVG_API MultitouchInputDevice: public InputDevice
 public:
     MultitouchInputDevice(const DivNodePtr& pEventReceiverNode=DivNodePtr());
     virtual ~MultitouchInputDevice() = 0;
-    virtual void start();
 
     std::vector<EventPtr> pollEvents();
 

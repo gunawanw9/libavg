@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -43,8 +43,7 @@ class AVG_API AsyncVideoDecoder: public VideoDecoder
 public:
     AsyncVideoDecoder(int queueLength);
     virtual ~AsyncVideoDecoder();
-    virtual void open(const std::string& sFilename, bool bUseHardwareAcceleration, 
-            bool bEnableSound);
+    virtual void open(const std::string& sFilename, bool bEnableSound);
     virtual void startDecoding(bool bDeliverYCbCr, const AudioParams* pAP);
     virtual void close();
     virtual void seek(float destTime);

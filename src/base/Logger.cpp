@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -60,6 +60,7 @@ namespace avg {
     const category_t Logger::category::PLAYER = UTF8String("PLAYER");
     const category_t Logger::category::SHADER = UTF8String("SHADER");
     const category_t Logger::category::DEPRECATION = UTF8String("DEPREC");
+    const category_t Logger::category::VIDEO = UTF8String("VIDEO");
 
 namespace {
     Logger* s_pLogger = 0;
@@ -240,6 +241,7 @@ void Logger::setupCategory()
     configureCategory(category::PLAYER);
     configureCategory(category::SHADER);
     configureCategory(category::DEPRECATION);
+    configureCategory(category::VIDEO);
 }
 
 severity_t Logger::stringToSeverity(const string& sSeverity)

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -58,7 +58,7 @@ ShaderRegistry::~ShaderRegistry()
 void ShaderRegistry::setShaderPath(const string& sLibPath)
 {
     s_sLibPath = sLibPath;
-#ifdef __linux
+#ifdef __linux__
     // XXX: If we're running make distcheck, the shaders are in a different place than
     // usual. Grrr.
     char * pszSrcDir = getenv("srcdir");

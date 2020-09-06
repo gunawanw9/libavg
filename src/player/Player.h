@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,12 +24,9 @@
 
 #include "../api.h"
 #include "Publisher.h"
-#include "Timeout.h"
-#include "TypeRegistry.h"
 #include "DisplayParams.h"
-#include "CursorState.h"
-#include "TestHelper.h"
 #include "BoostPython.h"
+#include "Event.h"
 
 #include "../audio/AudioParams.h"
 #include "../graphics/GLConfig.h"
@@ -40,7 +37,6 @@
 
 #include <string>
 #include <vector>
-#include <set>
 
 namespace avg {
 
@@ -49,7 +45,6 @@ class Node;
 class Canvas;
 class MainCanvas;
 class OffscreenCanvas;
-class TrackerInputDevice;
 class MultitouchInputDevice;
 class IFrameEndListener;
 class IPlaybackEndListener;
@@ -61,6 +56,14 @@ class CursorEvent;
 class DisplayEngine;
 class Display;
 class GLContextManager;
+class Timeout;
+class CursorState;
+class TestHelper;
+class InputDevice;
+class Bitmap;
+class AVGNode;
+class ImageCache;
+class NodeChain;
 
 typedef boost::shared_ptr<Node> NodePtr;
 typedef boost::weak_ptr<Node> NodeWeakPtr;
@@ -74,6 +77,12 @@ typedef boost::shared_ptr<CursorEvent> CursorEventPtr;
 typedef boost::shared_ptr<DisplayEngine> DisplayEnginePtr;
 typedef boost::shared_ptr<Display> DisplayPtr;
 typedef boost::shared_ptr<GLContextManager> GLContextManagerPtr;
+typedef boost::shared_ptr<CursorState> CursorStatePtr;
+typedef boost::shared_ptr<TestHelper> TestHelperPtr;
+typedef boost::shared_ptr<InputDevice> InputDevicePtr;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+typedef boost::shared_ptr<AVGNode> AVGNodePtr;
+typedef boost::shared_ptr<class NodeChain> NodeChainPtr;
 
 class AVG_API Player: public Publisher
 {
@@ -102,6 +111,7 @@ class AVG_API Player: public Publisher
         float getPixelsPerMM();
         glm::vec2 getPhysicalScreenDimensions();
         void assumePixelsPerMM(float ppmm);
+        ImageCache* getImageCache();
 
         CanvasPtr loadFile(const std::string& sFilename);
         CanvasPtr loadString(const std::string& sAVG);
@@ -118,7 +128,7 @@ class AVG_API Player: public Publisher
         void play();
         void stop();
         bool isStopping();
-        void initPlayback(const std::string& sShaderPath = "");
+        void initPlayback();
         void cleanup(bool bIsAbort);
         bool isPlaying();
         void setFramerate(float rate);
@@ -142,10 +152,8 @@ class AVG_API Player: public Publisher
         void addInputDevice(InputDevicePtr pSource);
         MouseEventPtr getMouseState() const;
         EventPtr getCurrentEvent() const;
-        TrackerInputDevice * getTracker();
-        void enableMultitouch();
+        BitmapPtr getTouchUserBmp() const;
         void enableMouse(bool enabled);
-        bool isMultitouchAvailable() const;
         void setEventCapture(NodePtr pNode, int cursorID);
         void releaseEventCapture(int cursorID);
         bool isCaptured(int cursorID);
@@ -155,12 +163,11 @@ class AVG_API Player: public Publisher
         int getKeyModifierState() const;
 
         BitmapPtr screenshot();
-        void setCursor(const Bitmap* pBmp, IntPoint hotSpot);
         void showCursor(bool bShow);
         bool isCursorShown();
 
         NodePtr getElementByID(const std::string& id);
-        AVGNodePtr getRootNode();
+        AVGNodePtr getRootNode() const;
         void doFrame(bool bFirstFrame);
         float getFramerate();
         float getVideoRefreshRate();
@@ -206,7 +213,7 @@ class AVG_API Player: public Publisher
 
     private:
         void initConfig();
-        void initGraphics(const std::string& sShaderPath);
+        void initGraphics();
         void initAudio();
         void initMainCanvas(NodePtr pRootNode);
 
@@ -219,11 +226,13 @@ class AVG_API Player: public Publisher
                 const xmlNodePtr xmlNode);
         OffscreenCanvasPtr registerOffscreenCanvas(NodePtr pNode);
         OffscreenCanvasPtr findCanvas(const std::string& sID) const;
-        void endFrame();
 
         void sendFakeEvents();
         void sendOver(CursorEventPtr pOtherEvent, Event::Type type, NodePtr pNode);
-        void handleCursorEvent(CursorEventPtr pEvent, bool bOnlyCheckCursorOver=false);
+        void handleCursorEvent(CursorEventPtr pEvent);
+        NodeChainPtr getNodesUnderCursor(CursorEventPtr pEvent) const;
+        void generateOverEvents(CursorEventPtr pEvent, NodeChainPtr pCursorNodes);
+        void updateCursorState(CursorEventPtr pEvent, NodeChainPtr pCursorNodes);
 
         void dispatchOffscreenRendering(OffscreenCanvas* pOffscreenCanvas);
 
@@ -236,7 +245,7 @@ class AVG_API Player: public Publisher
         DisplayEnginePtr m_pDisplayEngine;
         bool m_bDisplayEngineBroken;
         TestHelperPtr m_pTestHelper;
-       
+
         std::string m_CurDirName;
         bool m_bIsTraversingTree;
         bool m_bStopping;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,9 @@
 //  Current versions can be found at www.libavg.de
 //
 
+#include <iostream>
 #include "ThreadHelper.h"
+#include "Exception.h"
 #include "OSHelper.h"
 
 #ifdef _WIN32
@@ -31,7 +33,7 @@ using namespace std;
 
 namespace avg {
 
-#ifdef linux
+#ifdef __linux__
 void printAffinityMask(cpu_set_t& mask)
 {
     for (int i=0; i<32; ++i) {
@@ -46,7 +48,7 @@ void setAffinityMask(bool bIsMainThread)
     // The main thread gets the first processor to itself. All other threads share the
     // rest of the processors available, unless, of course, there is only one processor
     // in the machine.
-#ifdef linux
+#ifdef __linux__
     static cpu_set_t allProcessors;
     static bool bInitialized = false;
     if (!bInitialized) {
@@ -106,7 +108,7 @@ unsigned getLowestBitSet(unsigned val)
 
 void yield()
 {
-#ifdef linux
+#ifdef __linux__
     sched_yield();
 #else
 #ifdef _WIN32

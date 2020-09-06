@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -27,15 +27,13 @@
 #include "../base/GLMHelper.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 // Python docs say python.h should be included before any standard headers (!)
 #include "WrapPython.h"
 
 #include <vector>
 #include <map>
-#include <set>
-#include <boost/enable_shared_from_this.hpp>
 
 namespace avg {
 
@@ -43,6 +41,10 @@ class CursorEvent;
 typedef boost::shared_ptr<class CursorEvent> CursorEventPtr;
 class Contact;
 typedef boost::shared_ptr<class Contact> ContactPtr;
+class NodeChain;
+typedef boost::shared_ptr<class NodeChain> NodeChainPtr;
+class Node;
+typedef boost::shared_ptr<class Node> NodePtr;
 
 class AVG_API Contact: public Publisher {
 public:
@@ -62,6 +64,10 @@ public:
 
     void addEvent(CursorEventPtr pEvent);
     void sendEventToListeners(CursorEventPtr pCursorEvent);
+
+    void setNodeChain(NodeChainPtr pNodeChain);
+    glm::vec2 getRelPos(NodePtr pNode, const glm::vec2& pos) const;
+    bool isNodeInTargets(NodePtr pNode) const;
 
     int getID() const;
     
@@ -89,6 +95,8 @@ private:
     bool m_bCurListenerIsDead;
     int m_CursorID;
     float m_DistanceTravelled;
+
+    NodeChainPtr m_pNodeChain;
 };
 
 }

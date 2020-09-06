@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,12 @@
 #include <boost/thread/tss.hpp>
 
 #include <vector>
-#include <map>
 #if defined(_WIN32) || defined(_LIBCPP_VERSION)
 #include <unordered_map>
 #else
 #include <tr1/unordered_map>
 #endif
+
 namespace avg {
 
 class ThreadProfiler;

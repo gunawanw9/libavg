@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 #define _API_H_
 
 #ifdef _WIN32 // in declspec land
+#define NOMINMAX
 #pragma warning(disable: 4251)
 #define AVG_PLUGIN_API extern "C" __declspec(dllexport)
 #ifdef AVG_PLUGIN

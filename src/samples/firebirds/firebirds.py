@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # libavg - Media Playback Engine.
-# Copyright (C) 2012-2013 Ulrich von Zadow
+# Copyright (C) 2012-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -132,7 +132,7 @@ class _Aircraft(avg.DivNode):
 
 
 class PlayerAircraft(_Aircraft):
-    ACTION_KEYS = ('left', 'right', 'up', 'down', 'space')
+    ACTION_KEYS = ('Left', 'Right', 'Up', 'Down', 'Space')
     __BULLET_OFFSET_L = avg.Point2D( 52, 16)
     __BULLET_OFFSET_R = avg.Point2D(140, 16)
 
@@ -157,21 +157,21 @@ class PlayerAircraft(_Aircraft):
     def update(self, dt, keyStates):
         d = _Aircraft._SPEED * dt
         dx = 0
-        if keyStates['left']:
+        if keyStates['Left']:
             dx = -d
-        if keyStates['right']:
+        if keyStates['Right']:
             dx += d
         dy = 0
-        if keyStates['up']:
+        if keyStates['Up']:
             dy = -d
-        if keyStates['down']:
+        if keyStates['Down']:
             dy += d
         pos = (max(min(self.x + dx, self.__maxX), 0),
                max(min(self.y + dy, self.__maxY), 0))
         if pos != self.pos:
             self._move(pos)
 
-        if keyStates['space'] and self.__gunCtrl.shoot():
+        if keyStates['Space'] and self.__gunCtrl.shoot():
             # fire bullets
             bulletLeft = None
             bulletRight = None
@@ -235,8 +235,6 @@ class EnemyAircraft(_Aircraft):
             self.notifySubscribers(EnemyAircraft.ESCAPED, [])
 
 
-### gui elements ###
-
 class ScrollingBackground(object):
     __SCROLL_SPEED = 120.0 # px/s
 
@@ -255,31 +253,33 @@ class ScrollingBackground(object):
             self.__imgB.y = self.__imgA.y - self.__imgA.height
 
 
-class LiveCounter(avg.DivNode):
-    __NUM_LIVES = 3
+### gui elements ###
+
+class LifeCounter(avg.DivNode):
+    __NUM_LIFES = 3
 
     def __init__(self, parent=None, **kwargs):
-        super(LiveCounter, self).__init__(**kwargs)
+        super(LifeCounter, self).__init__(**kwargs)
         self.registerInstance(self, parent)
-        self.__numLives = 0
+        self.__numLifes = 0
         self.__images = []
         x = 0
-        for i in xrange(LiveCounter.__NUM_LIVES):
+        for i in xrange(LifeCounter.__NUM_LIFES):
             avg.ImageNode(href='gui_lives_bg.png', pos=(x, 0), parent=self)
             img = avg.ImageNode(href='gui_lives_fg.png', pos=(x, 0), parent=self)
             self.__images.append(img)
             x += img.width
 
     def reset(self):
-        self.__numLives = 3
+        self.__numLifes = 3
         for img in self.__images:
-            avg.fadeIn(img, 250)
+            avg.Anim.fadeIn(img, 250)
 
     def dec(self):
-        assert(self.__numLives)
-        self.__numLives -= 1
-        avg.fadeOut(self.__images[self.__numLives], 250)
-        return not self.__numLives
+        assert(self.__numLifes)
+        self.__numLifes -= 1
+        avg.Anim.fadeOut(self.__images[self.__numLifes], 250)
+        return not self.__numLifes
 
 
 class ScoreCounter(avg.DivNode):
@@ -363,7 +363,7 @@ class FireBirds(app.MainDiv):
 
         bg = avg.ImageNode(href='gui_frame.png', parent=self.__guiDiv)
         self.__guiDiv.pos = (0, self.height - bg.height)
-        self.__liveCounter = LiveCounter(pos=(8, 12), parent=self.__guiDiv)
+        self.__lifeCounter = LifeCounter(pos=(8, 12), parent=self.__guiDiv)
         gunCtrl = GunControl(pos=(300, 54), parent=self.__guiDiv)
         self.__scoreCounter = ScoreCounter(pos=(1142, 54), parent=self.__guiDiv)
 
@@ -388,20 +388,20 @@ class FireBirds(app.MainDiv):
 
     def __onKeyDown(self, event):
         if self.__player.alive:
-            if event.keystring in PlayerAircraft.ACTION_KEYS:
-                self.__keyStates[event.keystring] = True
+            if event.keyname in PlayerAircraft.ACTION_KEYS:
+                self.__keyStates[event.keyname] = True
         elif not self.__frameHandlerId: # game stopped
-            if event.keystring == 'space':
+            if event.keyname == 'Space':
                 self.__start()
         # else: wait for bullets and enemies to leave the screen
 
     def __onKeyUp(self, event):
-        if event.keystring in PlayerAircraft.ACTION_KEYS:
-            self.__keyStates[event.keystring] = False
+        if event.keyname in PlayerAircraft.ACTION_KEYS:
+            self.__keyStates[event.keyname] = False
 
     def __start(self):
         assert(not self.__frameHandlerId and not self.__spawnTimeoutId)
-        self.__liveCounter.reset()
+        self.__lifeCounter.reset()
         self.__scoreCounter.reset()
         self.__player.reset()
         self.__frameHandlerId = player.subscribe(player.ON_FRAME, self.__onFrame)
@@ -409,9 +409,8 @@ class FireBirds(app.MainDiv):
                 self.__spawnEnemy)
 
     def __stop(self):
-        assert(self.__frameHandlerId and self.__spawnTimeoutId)
-        player.clearInterval(self.__spawnTimeoutId)
-        self.__spawnTimeoutId = None
+        player.unsubscribe(player.ON_FRAME, self.__frameHandlerId)
+        self.__frameHandlerId = None
 
     def __createEnemy(self):
         enemy = EnemyAircraft(self.__shadowDiv, parent=self.__gameDiv)
@@ -447,11 +446,12 @@ class FireBirds(app.MainDiv):
                             b.destroy()
                             break
                 if e.alive: # no bullet hit
-                    if self.__player.alive and \
-                            self.__playerCollisionDetector.detect(e.pos, self.__player.pos):
+                    if (self.__player.alive and self.__playerCollisionDetector.detect(
+                            e.pos, self.__player.pos)):
                         e.destroy()
-                        if self.__liveCounter.dec():
-                            self.__stop()
+                        if self.__lifeCounter.dec():
+                            player.clearInterval(self.__spawnTimeoutId)
+                            self.__spawnTimeoutId = None
                             self.__player.destroy()
                 if e.alive: # no player collision
                     e.update(dt)
@@ -459,9 +459,9 @@ class FireBirds(app.MainDiv):
         if self.__player.alive:
             self.__player.update(dt, self.__keyStates)
         elif not self.__player.updateBullets(dt) and not enemiesActive:
-            # player dead, all bullets and enemies left the screen, all destroy videos played
-            player.unsubscribe(player.ON_FRAME, self.__frameHandlerId)
-            self.__frameHandlerId = None
+            # player dead, all bullets and enemies left the screen, all destroy videos
+            # played
+            self.__stop()
 
 
 if __name__ == '__main__':

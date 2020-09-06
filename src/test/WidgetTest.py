@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -20,8 +20,8 @@
 #
 
 from libavg import avg, textarea, widget, player
+from libavg.testcase import *
 
-from testcase import *
 
 class WidgetTestCase(AVGTestCase):
     def __init__(self, testFuncName):
@@ -167,17 +167,18 @@ class WidgetTestCase(AVGTestCase):
         def checkSingleLine():
             text = ''
             self.ta2.setText('')
+            keycode = ord('A')
             while True:
                 self.assert_(len(text) < 20)
-                self.ta2.onKeyDown(ord(u'A'))
-                text = text + 'A'
+                self.ta2.onKeyDown(keycode)
+                text += chr(keycode)
+                keycode += 1
                 if text != self.ta2.getText():
                     break
 
         root = self.loadEmptyScene()
 
         player.setFakeFPS(20)
-        textarea.init(avg, False)
         self.start(True,
                 (setup,
                  lambda: self.delay(200),
@@ -203,65 +204,6 @@ class WidgetTestCase(AVGTestCase):
                  lambda: self.compareImage("testTextArea3"),
                 ))
         player.setFakeFPS(-1)
-
-    def testFocusContext(self):
-        def setup():
-            textarea.init(avg)
-            self.ctx1 = textarea.FocusContext()
-            self.ctx2 = textarea.FocusContext()
-
-            self.ta1 = textarea.TextArea(self.ctx1, pos=(2,2), size=(156,54), parent=root)
-            self.ta1.setStyle(fontsize=16, multiline=True, color='FFFFFF')
-            self.ta1.setText('Lorem ipsum')
-
-            self.ta2 = textarea.TextArea(self.ctx1, pos=(2,58), size=(76,54), parent=root)
-            self.ta2.setStyle(fontsize=14, multiline=False, color='FFFFFF')
-            self.ta2.setText('dolor')
-
-            self.bgImage = avg.ImageNode(href="1x1_white.png", size=(76,54))
-            self.ta3 = textarea.TextArea(self.ctx2, disableMouseFocus=True, pos=(80,58),
-                size=(76,54), textBackgroundNode=self.bgImage, parent=root)
-            self.ta3.setStyle(fontsize=14, multiline=True, color='FFFFFF')
-            self.ta3.setText('dolor sit amet')
-
-            textarea.setActiveFocusContext(self.ctx1)
-
-        def writeChar():
-            helper = player.getTestHelper()
-            helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, 65, "A", 65, 0)
-            helper.fakeKeyEvent(avg.Event.KEY_UP, 65, 65, "A", 65, 0)
-            helper.fakeKeyEvent(avg.Event.KEY_DOWN, 66, 66, "B", 66, 0)
-            helper.fakeKeyEvent(avg.Event.KEY_UP, 66, 66, "B", 66, 0)
-            helper.fakeKeyEvent(avg.Event.KEY_DOWN, 67, 67, "C", 67, 0)
-            helper.fakeKeyEvent(avg.Event.KEY_UP, 67, 67, "C", 67, 0)
-
-        def switchFocus():
-            self.ctx1.cycleFocus()
-
-        def clearFocused():
-            self.ctx1.clear()
-
-        def clickForFocus():
-            self._sendMouseEvent(avg.Event.CURSOR_DOWN, 20, 70)
-            self._sendMouseEvent(avg.Event.CURSOR_UP, 20, 70)
-
-        root = self.loadEmptyScene()
-        self.start(True,
-                (setup,
-                 lambda: self.compareImage("testFocusContext1"),
-                 writeChar,
-                 lambda: self.compareImage("testFocusContext2"),
-                 switchFocus,
-                 writeChar,
-                 lambda: self.compareImage("testFocusContext3"),
-                 switchFocus,
-                 clearFocused,
-                 lambda: self.compareImage("testFocusContext4"),
-                 clickForFocus,
-                 clearFocused,
-                 lambda: self.compareImage("testFocusContext5"),
-               ))
-
 
     def testButton(self):
 
@@ -770,8 +712,8 @@ class WidgetTestCase(AVGTestCase):
         def setValue(value):
             self.node.value = value
 
-        def setRange(range):
-            self.node.range = range
+        def setRange(barRange):
+            self.node.range = barRange
 
         root = self.loadEmptyScene()
         self.node = widget.ProgressBar(orientation=widget.Orientation.HORIZONTAL,
@@ -828,10 +770,11 @@ class WidgetTestCase(AVGTestCase):
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_MOTION, 150, 5),
                  lambda: self.messageTester.assertState(
                         [widget.MediaControl.SEEK_MOTION,]),
-                 lambda: self.compareImage("testMediaControl4"),
+                 lambda: self.compareImage("testMediaControl6"),
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_UP, 150, 5),
                  lambda: self.messageTester.assertState(
                         [widget.MediaControl.SEEK_RELEASED,]),
+                 lambda: self.compareImage("testMediaControl4"),
                 ))
 
     def testScrollArea(self):
@@ -880,7 +823,6 @@ def widgetTestSuite(tests):
     availableTests = (
         "testKeyboard",
         "testTextArea",
-        "testFocusContext",
         "testButton",
         "testTextButton",
         "testToggleButton",

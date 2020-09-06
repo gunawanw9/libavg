@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 
 #include "../api.h"
 #include "../base/Queue.h"
+#include "../base/Exception.h"
 
 #include "AudioBuffer.h"
 
@@ -33,8 +34,8 @@ namespace avg {
 
 class AVG_API AudioMsg {
 public:
-    enum MsgType {NONE, AUDIO, AUDIO_TIME, END_OF_FILE, ERROR, FRAME, VDPAU_FRAME, 
-            SEEK_DONE, PACKET, CLOSED};
+    enum MsgType {NONE, AUDIO, AUDIO_TIME, END_OF_FILE, ERROR, FRAME, SEEK_DONE, PACKET,
+            CLOSED};
     AudioMsg();
     void setAudio(AudioBufferPtr pAudioBuffer, float audioTime);
     void setAudioTime(float audioTime);

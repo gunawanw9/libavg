@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,8 @@
 #include "BitmapLoader.h"
 #include "MCFBO.h"
 #include "MCTexture.h"
+#include "GLTexture.h"
+#include "TextureMover.h"
 
 #include "../base/ObjectCounter.h"
 #include "../base/Exception.h"
@@ -89,9 +91,11 @@ BitmapPtr GPUFilter::apply(BitmapPtr pBmpSource)
         GLContextManager::get()->uploadData();
         m_bIsInitialized = true;
     }
-    m_pSrcMover->moveBmpToTexture(pBmpSource, *(m_pSrcTex->getCurTex()));
-    apply(m_pSrcTex->getCurTex());
-    BitmapPtr pFilteredBmp = m_pFBOs[0]->getImage();
+    GLContext* pContext = GLContext::getCurrent();
+    GLTexturePtr pTex = m_pSrcTex->getTex(pContext);
+    m_pSrcMover->moveBmpToTexture(pBmpSource, *(pTex));
+    apply(pContext, pTex);
+    BitmapPtr pFilteredBmp = m_pFBOs[0]->getImage(pContext);
 
     BitmapPtr pTmpBmp;
     if (pixelFormatIsBlueFirst(pFilteredBmp->getPixelFormat()) !=
@@ -114,26 +118,26 @@ BitmapPtr GPUFilter::apply(BitmapPtr pBmpSource)
     return pDestBmp;
 }
 
-void GPUFilter::apply(GLTexturePtr pSrcTex)
+void GPUFilter::apply(GLContext* pContext, GLTexturePtr pSrcTex)
 {
-    m_pFBOs[0]->activate();
-    applyOnGPU(pSrcTex);
-    m_pFBOs[0]->copyToDestTexture();
+    m_pFBOs[0]->activate(pContext);
+    applyOnGPU(pContext, pSrcTex);
+    m_pFBOs[0]->copyToDestTexture(pContext);
 }
 
-GLTexturePtr GPUFilter::getDestTex(int i) const
+GLTexturePtr GPUFilter::getDestTex(GLContext* pContext, int i) const
 {
-    return m_pFBOs[i]->getTex()->getCurTex();
+    return m_pFBOs[i]->getTex()->getTex(pContext);
 }
 
-BitmapPtr GPUFilter::getImage() const
+BitmapPtr GPUFilter::getImage(GLContext* pContext) const
 {
-    return m_pFBOs[0]->getImage();
+    return m_pFBOs[0]->getImage(pContext);
 }
 
-FBOPtr GPUFilter::getFBO(int i)
+FBOPtr GPUFilter::getFBO(GLContext* pContext, int i)
 {
-    return m_pFBOs[i]->getCurFBO();
+    return m_pFBOs[i]->getCurFBO(pContext);
 }
 
 const IntRect& GPUFilter::getDestRect() const
@@ -155,11 +159,10 @@ FRect GPUFilter::getRelDestRect() const
 
 void GPUFilter::setDimensions(const IntPoint& srcSize)
 {
-    setDimensions(srcSize, IntRect(IntPoint(0,0), srcSize), GL_CLAMP_TO_EDGE);
+    setDimensions(srcSize, IntRect(IntPoint(0,0), srcSize));
 }
 
-void GPUFilter::setDimensions(const IntPoint& srcSize, const IntRect& destRect,
-        unsigned texMode)
+void GPUFilter::setDimensions(const IntPoint& srcSize, const IntRect& destRect)
 {
     bool bProjectionChanged = false;
     if (destRect != m_DestRect) {
@@ -174,8 +177,7 @@ void GPUFilter::setDimensions(const IntPoint& srcSize, const IntRect& destRect,
         bProjectionChanged = true;
     }
     if (m_bStandalone && srcSize != m_SrcSize) {
-        m_pSrcTex = GLContextManager::get()->createTexture(srcSize, m_PFSrc, false, 
-                texMode, texMode, 0);
+        m_pSrcTex = GLContextManager::get()->createTexture(srcSize, m_PFSrc, false, 0);
         m_pSrcMover = TextureMover::create(srcSize, m_PFSrc, GL_STREAM_DRAW);
         bProjectionChanged = true;
         m_bIsInitialized = false;
@@ -191,10 +193,10 @@ OGLShaderPtr GPUFilter::getShader() const
     return avg::getShader(m_sShaderID);
 }
 
-void GPUFilter::draw(GLTexturePtr pTex)
+void GPUFilter::draw(GLContext* pContext, GLTexturePtr pTex, const WrapMode& wrapMode)
 {
-    pTex->activate(GL_TEXTURE0);
-    m_pProjection->draw(getShader());
+    pTex->activate(wrapMode, GL_TEXTURE0);
+    m_pProjection->draw(pContext, getShader());
 }
 
 void dumpKernel(int width, float* pKernel)
@@ -228,7 +230,7 @@ MCTexturePtr GPUFilter::calcBlurKernelTex(float stdDev, float opacity, bool bUse
         int i=0;
         float coeff;
         do {
-            coeff = float(exp(-i*i/(2*stdDev*stdDev))/sqrt(2*PI*stdDev*stdDev))
+            coeff = float(exp(-i*i/(2*stdDev*stdDev))/sqrt(2*M_PI*stdDev*stdDev))
                     *float(opacity);
             tempCoeffs[i] = coeff;
             i++;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,15 +25,16 @@
 #include "../api.h"
 
 #include "FXNode.h"
-#include "../graphics/GPUInvertFilter.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/python.hpp>
 #include <string>
 
 using namespace std;
 
 namespace avg {
+
+class GPUInvertFilter;
+typedef boost::shared_ptr<GPUInvertFilter> GPUInvertFilterPtr;
 
 class AVG_API InvertFXNode : public FXNode {
 public:
@@ -46,12 +47,13 @@ public:
 private:
     virtual GPUFilterPtr createFilter(const IntPoint& size);
 
-    GPUInvertFilterPtr filterPtr;
+    GPUInvertFilterPtr m_pFilter;
 
 };
 
 typedef boost::shared_ptr<InvertFXNode> InvertFXNodePtr;
-} //end namespace avg
+
+}
 
 #endif
 

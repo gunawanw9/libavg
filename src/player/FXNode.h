@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,11 +24,22 @@
 
 #include "../api.h"
 
-#include "../graphics/GPUFilter.h"
+#include "../base/GLMHelper.h"
+#include "../base/Rect.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace avg {
+
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+class FBO;
+typedef boost::shared_ptr<FBO> FBOPtr;
+class GPUFilter;
+typedef boost::shared_ptr<GPUFilter> GPUFilterPtr;
+class GLTexture;
+typedef boost::shared_ptr<GLTexture> GLTexturePtr;
+class GLContext;
 
 class AVG_API FXNode {
 public:
@@ -39,17 +50,17 @@ public:
     virtual void disconnect();
     virtual void setSize(const IntPoint& newSize);
 
-    virtual void apply(GLTexturePtr pSrcTex);
+    virtual void apply(GLContext* pContext, GLTexturePtr pSrcTex);
 
-    GLTexturePtr getTex();
-    BitmapPtr getImage();
+    GLTexturePtr getTex(GLContext* pContext);
+    BitmapPtr getImage(GLContext* pContext);
     FRect getRelDestRect() const;
 
     bool isDirty() const;
     void resetDirty();
 
 protected:
-    FBOPtr getFBO();
+    FBOPtr getFBO(GLContext* pContext);
     void setDirty();
 
 private:

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,10 +22,11 @@
 #ifndef _BitmapManager_H_
 #define _BitmapManager_H_
 
+#include "../api.h"
+
 #include "BitmapManagerThread.h"
 #include "BitmapManagerMsg.h"
 
-#include "../api.h"
 #include "../base/Queue.h"
 #include "../base/IFrameEndListener.h"
 

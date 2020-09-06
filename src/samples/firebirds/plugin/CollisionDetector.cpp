@@ -1,22 +1,17 @@
 #include "CollisionDetector.h"
 
 #include "../../../base/ScopeTimer.h"
-#include "../../../wrapper/WrapHelper.h"
 
 namespace avg {
 
-CollisionDetector::CollisionDetector(const Bitmap& bmpA, const Bitmap& bmpB)
+CollisionDetector::CollisionDetector(BitmapPtr bmpA, BitmapPtr bmpB)
+    : m_pBmpA(bmpA),
+      m_pBmpB(bmpB)
 {
-    m_pBmpA = new Bitmap(bmpA.getSize(), B8G8R8A8);
-    m_pBmpA->copyPixels(bmpA);
-    m_pBmpB = new Bitmap(bmpB.getSize(), B8G8R8A8);
-    m_pBmpB->copyPixels(bmpB);
 }
 
 CollisionDetector::~CollisionDetector()
 {
-    delete m_pBmpA;
-    delete m_pBmpB;
 }
 
 static ProfilingZoneID CollisionDetectorProfilingZone("Detect collisions");
@@ -53,10 +48,12 @@ bool CollisionDetector::detect(glm::vec2 posA, glm::vec2 posB)
     }
     int width;
     dX = rightB - rightA;
-    if (dX < 0)
+    if (dX < 0) {
         width = std::min(widthA + dX, widthB);
-    else
+    } else {
         width = std::min(widthB - dX, widthA);
+    }
+
     // calculate y overlap
     int dY = posB.y - posA.y;
     if (dY < 0) {
@@ -69,10 +66,11 @@ bool CollisionDetector::detect(glm::vec2 posA, glm::vec2 posB)
     }
     int height;
     dY = bottomB - bottomA;
-    if (dY < 0)
+    if (dY < 0) {
         height = std::min(heightA + dY, heightB);
-    else
+    } else {
         height = std::min(heightB - dY, heightA);
+    }
 
     // test alpha channels
     const unsigned char* pPixStartA = m_pBmpA->getPixels() +
@@ -106,7 +104,7 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE(collisiondetector)
 {
     class_<avg::CollisionDetector, boost::noncopyable>("CollisionDetector", no_init)
-        .def(init<avg::Bitmap&, avg::Bitmap&>())
+        .def(init<avg::BitmapPtr, avg::BitmapPtr>())
         .def("detect", &avg::CollisionDetector::detect)
         ;
 }

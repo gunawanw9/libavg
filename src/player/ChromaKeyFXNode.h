@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,11 +25,15 @@
 #include "../api.h"
 
 #include "FXNode.h"
-#include "../graphics/GPUChromaKeyFilter.h"
+
+#include "../graphics/Color.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace avg {
+
+class GPUChromaKeyFilter;
+typedef boost::shared_ptr<GPUChromaKeyFilter> GPUChromaKeyFilterPtr;
 
 class AVG_API ChromaKeyFXNode: public FXNode {
 public:
@@ -38,8 +42,8 @@ public:
 
     virtual void disconnect();
 
-    void setColor(const std::string& sColorName);
-    const std::string& getColor() const;
+    void setColor(const Color& color);
+    const Color& getColor() const;
     void setHTolerance(float tolerance);
     float getHTolerance() const;
     void setSTolerance(float tolerance);
@@ -59,8 +63,7 @@ private:
 
     GPUChromaKeyFilterPtr m_pFilter;
 
-    std::string m_sColorName;
-    Pixel32 m_Color;
+    Color m_Color;
     float m_HTolerance;
     float m_STolerance;
     float m_LTolerance;

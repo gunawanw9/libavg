@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -50,8 +50,8 @@ float LinearAnim::getStartPart(float start, float end, float cur)
     return (cur-start)/(end-start);
 }
 
-AnimPtr fadeIn(const boost::python::object& node, long long duration, float max, 
-        const boost::python::object& stopCallback)
+AnimPtr LinearAnim::fadeIn(const boost::python::object& node, long long duration,
+        float max, const boost::python::object& stopCallback)
 {
     object startVal = node.attr("opacity");
     AnimPtr pAnim(new LinearAnim(node, "opacity", duration, startVal, 
@@ -60,7 +60,7 @@ AnimPtr fadeIn(const boost::python::object& node, long long duration, float max,
     return pAnim;
 }
 
-AnimPtr fadeOut(const boost::python::object& node, long long duration, 
+AnimPtr LinearAnim::fadeOut(const boost::python::object& node, long long duration,
         const boost::python::object& stopCallback)
 {
     object startVal = node.attr("opacity");

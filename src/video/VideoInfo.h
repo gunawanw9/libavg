@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -38,8 +38,7 @@ struct AVG_API VideoInfo
     VideoInfo(std::string sContainerFormat, float duration, int bitrate, bool bHasVideo,
             bool bHasAudio);
     void setVideoData(const IntPoint& size, const std::string& sPixelFormat,
-            int numFrames, float streamFPS, const std::string& sVCodec,
-            bool bUsesVDPAU, float duration);
+            int numFrames, float streamFPS, const std::string& sVCodec, float duration);
 
     void setAudioData(const std::string& sACodec, int sampleRate, int numAudioChannels,
             float duration);
@@ -54,7 +53,6 @@ struct AVG_API VideoInfo
     int m_NumFrames;
     float m_StreamFPS;
     std::string m_sVCodec;
-    bool m_bUsesVDPAU;
     float m_VideoDuration;
 
     bool m_bHasAudio;

@@ -1,7 +1,7 @@
 
 //
-//  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  libavg - Media Playback Engine.
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,17 +25,18 @@
 #include "../base/ProfilingZoneID.h"
 #include "../base/ScopeTimer.h"
 #include "../base/StringHelper.h"
-
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 18, 102)
-    typedef CodecID AVCodecID;
-#endif
+#include "../video/VideoDecoder.h"
 
 using namespace std;
 
 namespace avg {
 
-const unsigned int VIDEO_BUFFER_SIZE = 400000;
-const AVPixelFormat STREAM_PIXEL_FORMAT = ::PIX_FMT_YUVJ420P;
+// NOTE: AV_PIX_FMT_YUVJ420P is deprecated (AV_PIX_FMT_YUV420P with JPEG color
+//       range should be used instead), but the MJPEG codec doesn't support
+//       AV_PIX_FMT_YUV420P yet. Both formats are planar YUV 4:2:0 12bpp.
+const AVPixelFormat FRAME_PIXEL_FORMAT = AV_PIX_FMT_YUV420P;
+const AVPixelFormat STREAM_PIXEL_FORMAT = AV_PIX_FMT_YUVJ420P;
+
 
 VideoWriterThread::VideoWriterThread(CQueue& cmdQueue, const string& sFilename,
         IntPoint size, int frameRate, int qMin, int qMax)
@@ -75,6 +76,7 @@ void VideoWriterThread::close()
 {
     if (m_pOutputFormatContext) {
         av_write_trailer(m_pOutputFormatContext);
+        lock_guard lock(VideoDecoder::s_OpenMutex);
         avcodec_close(m_pVideoStream->codec);
 
         for (unsigned int i=0; i<m_pOutputFormatContext->nb_streams; i++) {
@@ -86,15 +88,10 @@ void VideoWriterThread::close()
         }
 
         if (!(m_pOutputFormat->flags & AVFMT_NOFILE)) {
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53, 8, 0)
             avio_close(m_pOutputFormatContext->pb);
-#else            
-            url_fclose(m_pOutputFormatContext->pb);
-#endif
         }
 
         av_free(m_pOutputFormatContext);
-        av_free(m_pVideoBuffer);
         av_free(m_pConvertedFrame);
         av_free(m_pPictureBuffer);
         sws_freeContext(m_pFrameConversionContext);
@@ -121,31 +118,23 @@ void VideoWriterThread::deinit()
 
 void VideoWriterThread::open()
 {
-    av_register_all(); // TODO: make sure this is only done once. 
+    lock_guard lock(VideoDecoder::s_OpenMutex);
+    av_register_all(); // TODO: make sure this is only done once.
 //    av_log_set_level(AV_LOG_DEBUG);
-#if LIBAVFORMAT_VERSION_MAJOR > 52
     m_pOutputFormat = av_guess_format(0, m_sFilename.c_str(), 0);
-#else
-    m_pOutputFormat = guess_format(0, m_sFilename.c_str(), 0);
-#endif
+    if (m_pOutputFormat == NULL) {
+        throw Exception(AVG_ERR_VIDEO_INIT_FAILED,
+                string("Could not guess format for output file: '") + m_sFilename + "'");
+    }
     m_pOutputFormat->video_codec = AV_CODEC_ID_MJPEG;
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(52, 24, 0)
     m_pOutputFormatContext = avformat_alloc_context();
-#else
-    m_pOutputFormatContext = av_alloc_format_context();
-#endif
     m_pOutputFormatContext->oformat = m_pOutputFormat;
 
     strncpy(m_pOutputFormatContext->filename, m_sFilename.c_str(),
-            sizeof(m_pOutputFormatContext->filename));
+            sizeof(m_pOutputFormatContext->filename) - 1);
 
-    if (m_pOutputFormat->video_codec != AV_CODEC_ID_NONE) {
-        setupVideoStream();
-    }
-#if LIBAVFORMAT_VERSION_MAJOR < 52
-    av_set_parameters(m_pOutputFormatContext, NULL);
-#endif
+    setupVideoStream();
 
     float muxMaxDelay = 0.7;
     m_pOutputFormatContext->max_delay = int(muxMaxDelay * AV_TIME_BASE);
@@ -154,45 +143,44 @@ void VideoWriterThread::open()
 
     openVideoCodec();
 
-    m_pVideoBuffer = NULL;
-    if (!(m_pOutputFormatContext->oformat->flags & AVFMT_RAWPICTURE)) {
-        m_pVideoBuffer = (unsigned char*)(av_malloc(VIDEO_BUFFER_SIZE));
-    }
-
     if (!(m_pOutputFormat->flags & AVFMT_NOFILE)) {
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53, 8, 0)
         int retVal = avio_open(&m_pOutputFormatContext->pb, m_sFilename.c_str(),
                 URL_WRONLY);
-#else
-        int retVal = url_fopen(&m_pOutputFormatContext->pb, m_sFilename.c_str(),
-                URL_WRONLY);
-#endif
         if (retVal < 0) {
-            throw Exception(AVG_ERR_VIDEO_INIT_FAILED, 
+            throw Exception(AVG_ERR_VIDEO_INIT_FAILED,
                     string("Could not open output file: '") + m_sFilename + "'");
         }
     }
 
-    m_pFrameConversionContext = sws_getContext(m_Size.x, m_Size.y, 
-            ::PIX_FMT_RGB32, m_Size.x, m_Size.y, STREAM_PIXEL_FORMAT, 
+    m_pFrameConversionContext = sws_getContext(m_Size.x, m_Size.y,
+            AV_PIX_FMT_RGB32, m_Size.x, m_Size.y, FRAME_PIXEL_FORMAT,
             SWS_BILINEAR, NULL, NULL, NULL);
+    int srcTable[4], unused[4];
+    int srcRange, dstRange, brightness, contrast, saturation;
+    sws_getColorspaceDetails(m_pFrameConversionContext,
+            (int**)&srcTable, &srcRange, (int**)&unused, &dstRange,
+            &brightness, &contrast, &saturation);
+    const int* dstTable = sws_getCoefficients(SWS_CS_DEFAULT);
+    dstRange = 1; // JPEG YUV color range
+    sws_setColorspaceDetails(m_pFrameConversionContext,
+            srcTable, srcRange, dstTable, dstRange,
+            brightness, contrast, saturation);
 
-    m_pConvertedFrame = createFrame(STREAM_PIXEL_FORMAT, m_Size);
+    m_pConvertedFrame = createFrame(FRAME_PIXEL_FORMAT, m_Size);
 
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-    avformat_write_header(m_pOutputFormatContext, 0);
-#else
-    av_write_header(m_pOutputFormatContext);
-#endif
+    if (avformat_write_header(m_pOutputFormatContext, 0) < 0) {
+        throw Exception(AVG_ERR_VIDEO_INIT_FAILED,
+                string("Could not write header to output file: '") + m_sFilename + "'");
+    }
+
+//    av_dump_format(m_pOutputFormatContext, 0, m_sFilename.c_str(), 1);
 }
 
 void VideoWriterThread::setupVideoStream()
 {
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53, 21, 0)
     m_pVideoStream = avformat_new_stream(m_pOutputFormatContext, 0);
-#else
-    m_pVideoStream = av_new_stream(m_pOutputFormatContext, 0);
-#endif
+    m_pVideoStream->time_base.num = 1;
+    m_pVideoStream->time_base.den = m_FrameRate;
 
     AVCodecContext* pCodecContext = m_pVideoStream->codec;
     pCodecContext->codec_id = static_cast<AVCodecID>(m_pOutputFormat->video_codec);
@@ -216,7 +204,7 @@ void VideoWriterThread::setupVideoStream()
     pCodecContext->qmax = m_QMax;
     // some formats want stream headers to be separate
     if (m_pOutputFormatContext->oformat->flags & AVFMT_GLOBALHEADER) {
-        pCodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
     m_FramesWritten = 0;
 }
@@ -234,12 +222,15 @@ AVFrame* VideoWriterThread::createFrame(AVPixelFormat pixelFormat, IntPoint size
 {
     AVFrame* pPicture;
 
-    pPicture = avcodec_alloc_frame();
+    pPicture = av_frame_alloc();
 
     int memNeeded = avpicture_get_size(pixelFormat, size.x, size.y);
     m_pPictureBuffer = static_cast<unsigned char*>(av_malloc(memNeeded));
     avpicture_fill(reinterpret_cast<AVPicture*>(pPicture),
             m_pPictureBuffer, pixelFormat, size.x, size.y);
+    pPicture->format = pixelFormat;
+    pPicture->width = size.x;
+    pPicture->height = size.y;
 
     return pPicture;
 }
@@ -260,11 +251,11 @@ void VideoWriterThread::convertYUVImage(BitmapPtr pSrcBmp)
 {
     ScopeTimer timer(ProfilingZoneConvertImage);
     IntPoint size = pSrcBmp->getSize();
-    BitmapPtr pYBmp(new Bitmap(size, I8, m_pConvertedFrame->data[0], 
+    BitmapPtr pYBmp(new Bitmap(size, I8, m_pConvertedFrame->data[0],
             m_pConvertedFrame->linesize[0], false));
-    BitmapPtr pUBmp(new Bitmap(size/2, I8, m_pConvertedFrame->data[1], 
+    BitmapPtr pUBmp(new Bitmap(size/2, I8, m_pConvertedFrame->data[1],
             m_pConvertedFrame->linesize[1], false));
-    BitmapPtr pVBmp(new Bitmap(size/2, I8, m_pConvertedFrame->data[2], 
+    BitmapPtr pVBmp(new Bitmap(size/2, I8, m_pConvertedFrame->data[2],
             m_pConvertedFrame->linesize[2], false));
     for (int y=0; y<size.y/2; ++y) {
         int srcStride = pSrcBmp->getStride();
@@ -279,11 +270,11 @@ void VideoWriterThread::convertYUVImage(BitmapPtr pSrcBmp)
             *(pYDest+yStride) = *(pSrc+srcStride);
             *(pYDest+yStride+1) = *(pSrc+srcStride+4);
 
-            *pUDest = ((int)*(pSrc+1) + *(pSrc+5) + 
-                       *(pSrc+srcStride+1) + *(pSrc+srcStride+5) + 2)/4; 
+            *pUDest = ((int)*(pSrc+1) + *(pSrc+5) +
+                       *(pSrc+srcStride+1) + *(pSrc+srcStride+5) + 2)/4;
 
-            *pVDest = ((int)*(pSrc+2) + *(pSrc+6) + 
-                       *(pSrc+srcStride+2) + *(pSrc+srcStride+6) + 2)/4; 
+            *pVDest = ((int)*(pSrc+2) + *(pSrc+6) +
+                       *(pSrc+srcStride+2) + *(pSrc+srcStride+6) + 2)/4;
 
             pSrc += 8;
             pYDest += 2;
@@ -300,47 +291,28 @@ static ProfilingZoneID ProfilingZoneWriteFrame(" Write frame", true);
 void VideoWriterThread::writeFrame(AVFrame* pFrame)
 {
     ScopeTimer timer(ProfilingZoneWriteFrame);
+    pFrame->pts = m_FramesWritten;
     m_FramesWritten++;
     AVCodecContext* pCodecContext = m_pVideoStream->codec;
     AVPacket packet = { 0 };
-    int ret, out_size = 0;
+    int ret;
 
-    #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(54, 0, 0)
-        int got_output = 0;
-        ret = avcodec_encode_video2(pCodecContext, &packet, pFrame, &got_output);
-        if(ret < 0) {
-            av_free_packet(&packet);
-            AVG_ASSERT(false);
-        }
-        out_size = packet.size;
-    #else
-        out_size = avcodec_encode_video(pCodecContext, m_pVideoBuffer,
-                VIDEO_BUFFER_SIZE, pFrame);
-        if(out_size > 0) {
-            av_init_packet(&packet);
-
-            if ((pCodecContext->coded_frame->pts) != (long long)AV_NOPTS_VALUE) {
-                packet.pts = av_rescale_q(pCodecContext->coded_frame->pts,
-                        pCodecContext->time_base, m_pVideoStream->time_base);
-            }
-
-            if (pCodecContext->coded_frame->key_frame) {
-                packet.flags |= AV_PKT_FLAG_KEY;
-            }
-            packet.stream_index = m_pVideoStream->index;
-            packet.data = m_pVideoBuffer;
-            packet.size = out_size;
-        }
-    #endif
-
-    ///* if zero size, it means the image was buffered */
-    if (out_size > 0) {
-        /* write the compressed frame in the media file */
-        ret = av_interleaved_write_frame(m_pOutputFormatContext, &packet);
-        av_free_packet(&packet);
-        AVG_ASSERT(ret == 0);
+    av_init_packet(&packet);
+    int got_output = 0;
+    ret = avcodec_encode_video2(pCodecContext, &packet, pFrame, &got_output);
+    AVG_ASSERT(ret >= 0);
+    if (!got_output) {
+        return;
     }
-
+    av_packet_rescale_ts(&packet, pCodecContext->time_base, m_pVideoStream->time_base);
+    /* write the compressed frame in the media file */
+    ret = av_interleaved_write_frame(m_pOutputFormatContext, &packet);
+    av_free_packet(&packet);
+    if (ret != 0) {
+        AVG_TRACE(Logger::category::VIDEO, Logger::severity::ERROR,
+                getAVErrorString(ret));
+    }
+    AVG_ASSERT(ret == 0);
 }
 
 }

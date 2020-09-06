@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,22 +23,25 @@
 #define _Shape_H_
 
 #include "../api.h"
-#include "Image.h"
-#include "MaterialInfo.h"
 
 #include "../base/GLMHelper.h"
-#include "../graphics/Bitmap.h"
 #include "../graphics/SubVertexArray.h"
+#include "../graphics/WrapMode.h"
 
 #include <boost/shared_ptr.hpp>
-#include <string>
 
 namespace avg {
+
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+class GPUImage;
+typedef boost::shared_ptr<GPUImage> GPUImagePtr;
+class OGLSurface;
 
 class AVG_API Shape
 {
     public:
-        Shape(const MaterialInfo& material);
+        Shape(const WrapMode& wrapMode, bool bUseMipmaps);
         virtual ~Shape();
 
         void setBitmap(BitmapPtr pBmp);
@@ -46,20 +49,20 @@ class AVG_API Shape
         virtual void moveToGPU();
         virtual void moveToCPU();
 
-        ImagePtr getImage();
-        VertexDataPtr getVertexData();
+        GPUImagePtr getGPUImage();
+        void setVertexData(VertexDataPtr pVertexData);
         void setVertexArray(const VertexArrayPtr& pVA);
-        void draw(const glm::mat4& transform, float opacity);
+        void draw(GLContext* pContext, const glm::mat4& transform, float opacity);
+        bool isPtInside(const glm::vec2& pos);
 
         void discard();
 
     private:
-        bool isTextured() const;
-
         VertexDataPtr m_pVertexData;
         SubVertexArray m_SubVA;
         OGLSurface * m_pSurface;
-        ImagePtr m_pImage;
+        GPUImagePtr m_pGPUImage;
+        FRect m_Bounds;
 };
 
 typedef boost::shared_ptr<Shape> ShapePtr;

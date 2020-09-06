@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -61,8 +61,8 @@ void FilterUnmultiplyAlpha::applyInPlace(BitmapPtr pBmp)
     // color from a neighboring non-transparent pixel.
     for (int y = 1; y < size.y-1; y++) {
         int stride = pBmp->getStride();
-        unsigned char * pPixel = pBmp->getPixels() + y*stride;
-        for (int x = 1; x < size.x-1; x++) { 
+        unsigned char * pPixel = pBmp->getPixels() + y*stride + 4;
+        for (int x = 1; x < size.x-1; x++) {
             int alpha = *(pPixel+ALPHAPOS);
             if (alpha == 0) {
                 unsigned char * pSrcPixel = pPixel;

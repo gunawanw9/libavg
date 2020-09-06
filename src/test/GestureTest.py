@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 from libavg import avg, gesture, player
 
 import math
-from testcase import *
+from libavg.testcase import *
 
 class GestureTestCase(AVGTestCase):
 
@@ -501,7 +501,7 @@ class GestureTestCase(AVGTestCase):
                     gesture.Recognizer.DETECTED, gesture.Recognizer.FAILED,
                     gesture.Recognizer.END], 
                     self)
-            return (dragRecognizer, messageTester)
+            return dragRecognizer, messageTester
 
         player.setFakeFPS(100)
         sys.stderr.write("\n")
@@ -635,6 +635,23 @@ class GestureTestCase(AVGTestCase):
                         [gesture.Recognizer.MOTION]),
                 ))
 
+        # Test recognizer on root node
+        sys.stderr.write("  Root node recognizer\n")
+        self.__initImageScene()
+        dragRecognizer = gesture.DragRecognizer(player.getRootNode(),
+                moveHandler=onMove, upHandler=onUp, friction=-1,
+                minDragDist=0, direction=gesture.DragRecognizer.ANY_DIRECTION)
+        self.messageTester = MessageTester(dragRecognizer, [gesture.Recognizer.POSSIBLE,
+                gesture.Recognizer.DETECTED, gesture.Recognizer.FAILED,
+                gesture.Recognizer.END],
+                self)
+        self.start(False,
+                (self._genMouseEventFrames(avg.Event.CURSOR_DOWN, 30, 30,
+                        [gesture.Recognizer.DETECTED]),
+                 self._genMouseEventFrames(avg.Event.CURSOR_UP, 40, 20,
+                        [gesture.Recognizer.UP, gesture.Recognizer.END]),
+                ))
+
         # Test second down during inertia, constrained recognizer
         sys.stderr.write("  Down during inertia, constrained recognizer\n")
         dragRecognizer, self.messageTester = setupRecognizer(friction=0.01,
@@ -690,12 +707,19 @@ class GestureTestCase(AVGTestCase):
                      lambda: self._sendMouseEvent(avg.Event.CURSOR_MOTION, 70, 70),
                     ))
         player.setFakeFPS(-1)
-        assert(self.__onDragCalled)
+        self.assert_(self.__onDragCalled)
 
 
     def testDragRecognizerInitialEvent(self):
 
+        def createIllegalCoordSysNode():
+            gesture.DragRecognizer(self.err_image, 
+                    detectedHandler=onDragStart, moveHandler=onDrag, 
+                    initialEvent=player.getCurrentEvent())
+
         def onMotion(offset):
+            self.assertRaises(avg.Exception, createIllegalCoordSysNode)
+
             gesture.DragRecognizer(self.image, 
                     detectedHandler=onDragStart, moveHandler=onDrag, 
                     initialEvent=player.getCurrentEvent())
@@ -708,6 +732,8 @@ class GestureTestCase(AVGTestCase):
             self.assertEqual(offset, (10,0))
 
         self.__initImageScene()
+        self.err_image = avg.ImageNode(href="rgb24-64x64.png", pos=(200,200), 
+                parent=self.root)
         self.image.subscribe(avg.Node.CURSOR_MOTION, onMotion)
         self.__dragStartCalled = False
         self.start(False,
@@ -715,7 +741,7 @@ class GestureTestCase(AVGTestCase):
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_MOTION, 40, 30),
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_MOTION, 50, 30),
                 ))
-        assert(self.__dragStartCalled)
+        self.assert_(self.__dragStartCalled)
 
 
     def testDragRecognizerCoordSysNode(self):
@@ -734,7 +760,7 @@ class GestureTestCase(AVGTestCase):
                 (lambda: self._sendMouseEvent(avg.Event.CURSOR_DOWN, 30, 30),
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_MOTION, 70, 70),
                 ))
-        assert(self.__dragRecognizerCalled)
+        self.assert_(self.__dragRecognizerCalled)
 
 
     def testDragRecognizerCoordSysNodeParentUnlink(self):
@@ -742,9 +768,6 @@ class GestureTestCase(AVGTestCase):
         def onDrag(offset):
             self.assertEqual(offset, (40,40))
             self.__dragRecognizerCalled = True
-
-        def onUp(offset):
-            self.__upRecognizerCalled = True
 
         root = self.loadEmptyScene()
         div = avg.DivNode(pos=(64,64), angle=math.pi, parent=root)
@@ -759,8 +782,8 @@ class GestureTestCase(AVGTestCase):
                  lambda: div.unlink(False),
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_UP, 70, 70),
                 ))
-        assert(self.__dragRecognizerCalled)
-        assert(not self.__upRecognizerCalled)
+        self.assert_(self.__dragRecognizerCalled)
+        self.assert_(not self.__upRecognizerCalled)
 
 
     def testDragRecognizerMinDist(self):
@@ -1009,7 +1032,18 @@ class GestureTestCase(AVGTestCase):
                         abortDuringUp),
                  lambda: self._sendTouchEvent(1, avg.Event.CURSOR_UP, 10, 10),
                 ))
-        
+
+        # Test root node
+        self.__initImageScene()
+        self.__transformRecognizer = gesture.TransformRecognizer(player.getRootNode(),
+                detectedHandler=onDetected, moveHandler=onMove, upHandler=onUp)
+        self.start(False,
+                (
+                 lambda: self._sendTouchEvent(1, avg.Event.CURSOR_DOWN, 10, 10),
+                 lambda: self._sendTouchEvent(1, avg.Event.CURSOR_UP, 20, 20),
+                 lambda: checkTransform(gesture.Transform((10, 10))),
+                ))
+
 
         # Test second down during inertia.
         self.__initImageScene()
@@ -1060,9 +1094,32 @@ class GestureTestCase(AVGTestCase):
         self.assertAlmostEqual(image.size, (30,40))
         self.assertAlmostEqual(image.angle, 1.57)
 
+    def testTwoRecognizers(self):
+        self.__initImageScene()
+        self.__tapRecognizer = gesture.TapRecognizer(self.image)
+        self.messageTester = MessageTester(self.__tapRecognizer,
+                [gesture.Recognizer.POSSIBLE, gesture.Recognizer.DETECTED,
+                gesture.Recognizer.FAILED], self)
+        self.__tapRecognizer2 = gesture.TapRecognizer(self.image)
+        player.setFakeFPS(10)
+        self.start(False,
+                (# Standard down-hold-up sequence.
+                 self._genMouseEventFrames(avg.Event.CURSOR_DOWN, 30, 30,
+                        [gesture.Recognizer.POSSIBLE]),
+                 self._genMouseEventFrames(avg.Event.CURSOR_UP, 30, 30,
+                        [gesture.Recognizer.DETECTED]),
+
+                 # down-move-up sequence, should fail.
+                 self._genMouseEventFrames(avg.Event.CURSOR_DOWN, 1, 1,
+                        [gesture.Recognizer.POSSIBLE]),
+                 self._genMouseEventFrames(avg.Event.CURSOR_MOTION, 150, 50,
+                        [gesture.Recognizer.FAILED]),
+                 self._genMouseEventFrames(avg.Event.CURSOR_UP, 30, 30, []),
+                ))
+
     def __initImageScene(self):
-        root = self.loadEmptyScene()
-        self.image = avg.ImageNode(parent=root, href="rgb24-64x64.png")
+        self.root = self.loadEmptyScene()
+        self.image = avg.ImageNode(parent=self.root, href="rgb24-64x64.png")
 
     def __killImageNode(self):
         self.image.unlink(True)
@@ -1083,6 +1140,7 @@ def gestureTestSuite(tests):
         "testDragRecognizerCoordSysNodeParentUnlink",
         "testDragRecognizerMinDist",
         "testTransformRecognizer",
+        "testTwoRecognizers",
         "testKMeans",
         "testMat3x3",
         )

@@ -1,5 +1,5 @@
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2011 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,8 @@ WindowParams::WindowParams()
       m_Size(0, 0),
       m_Viewport(0, 0, 0, 0),
       m_DisplayServer(0),
-      m_bHasWindowFrame(true)
+      m_bHasWindowFrame(true),
+      m_sTitle("libavg")
 { 
 }
 
@@ -66,6 +67,7 @@ void WindowParams::dump() const
     cerr << "    size: " << m_Size << endl;
     cerr << "    viewport: " << m_Viewport << endl;
     cerr << "    has window frame: " << m_bHasWindowFrame << endl;
+    cerr << "    title: " << m_sTitle << endl;
 }
 
 }

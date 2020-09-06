@@ -1,6 +1,6 @@
 //
-//  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  libavg - Media Playback Engine.
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -27,9 +27,7 @@
 #include "../base/TimeSource.h"
 #include "../base/ScopeTimer.h"
 
-#if AVUTIL_VERSION_INT > AV_VERSION_INT(52, 0, 0)
 #include <libavutil/samplefmt.h>
-#endif
 
 #ifndef AVCODEC_MAX_AUDIO_FRAME_SIZE
     #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000
@@ -39,7 +37,7 @@ using namespace std;
 
 namespace avg {
 
-AudioDecoderThread::AudioDecoderThread(CQueue& cmdQ, AudioMsgQueue& msgQ, 
+AudioDecoderThread::AudioDecoderThread(CQueue& cmdQ, AudioMsgQueue& msgQ,
         VideoMsgQueue& packetQ, AVStream* pStream, const AudioParams& ap)
     : WorkerThread<AudioDecoderThread>(string("AudioDecoderThread"), cmdQ),
       m_MsgQ(msgQ),
@@ -62,12 +60,9 @@ AudioDecoderThread::AudioDecoderThread(CQueue& cmdQ, AudioMsgQueue& msgQ,
 AudioDecoderThread::~AudioDecoderThread()
 {
     if (m_pResampleContext) {
-#ifdef LIBAVRESAMPLE_VERSION
-        avresample_close(m_pResampleContext);
-        avresample_free(&m_pResampleContext);
-#else
-        audio_resample_close(m_pResampleContext);
-#endif
+        swr_close(m_pResampleContext);
+        swr_free(&m_pResampleContext);
+
         m_pResampleContext = 0;
     }
 }
@@ -75,7 +70,7 @@ AudioDecoderThread::~AudioDecoderThread()
 static ProfilingZoneID DecoderProfilingZone("Audio Decoder Thread", true);
 static ProfilingZoneID PacketWaitProfilingZone("Audio Wait for packet", true);
 
-bool AudioDecoderThread::work() 
+bool AudioDecoderThread::work()
 {
     ScopeTimer timer(DecoderProfilingZone);
     VideoMsgPtr pMsg;
@@ -125,22 +120,16 @@ bool AudioDecoderThread::work()
 
 void AudioDecoderThread::decodePacket(AVPacket* pPacket)
 {
-    char* pDecodedData;
+    char* pDecodedData = 0;
     AVPacket* pTempPacket = new AVPacket;
     av_init_packet(pTempPacket);
     pTempPacket->data = pPacket->data;
     pTempPacket->size = pPacket->size;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 25, 0)
     AVFrame* pDecodedFrame;
-    pDecodedFrame = avcodec_alloc_frame();
-#else
-    pDecodedData = (char*)av_malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE +
-            FF_INPUT_BUFFER_PADDING_SIZE);
-#endif
+    pDecodedFrame = av_frame_alloc();
     while (pTempPacket->size > 0) {
         int gotFrame = 0;
-        int bytesDecoded = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 25, 0)
+        int bytesDecoded;
         int bytesConsumed = avcodec_decode_audio4(m_pStream->codec, pDecodedFrame,
                 &gotFrame, pTempPacket);
         if (gotFrame) {
@@ -150,10 +139,6 @@ void AudioDecoderThread::decodePacket(AVPacket* pPacket)
         } else {
             bytesDecoded = 0;
         }
-#else
-        int bytesConsumed = avcodec_decode_audio3(m_pStream->codec, (short*)pDecodedData,
-                &bytesDecoded, pTempPacket);
-#endif
 //        This is triggered for some strange/broken videos.
 //        AVG_ASSERT(bytesConsumed != 0);
         if (bytesConsumed < 0) {
@@ -169,22 +154,20 @@ void AudioDecoderThread::decodePacket(AVPacket* pPacket)
                     getBytesPerSample(m_InputSampleFormat));
             AudioBufferPtr pBuffer;
             bool bNeedsResample = (m_InputSampleRate != m_AP.m_SampleRate ||
-                    m_InputSampleFormat != SAMPLE_FMT_S16 ||
+                    m_InputSampleFormat != AV_SAMPLE_FMT_S16 ||
                     m_pStream->codec->channels != m_AP.m_Channels);
             bool bIsPlanar = false;
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(51, 27, 0)
-            bIsPlanar = av_sample_fmt_is_planar((SampleFormat)m_InputSampleFormat);
+            bIsPlanar = av_sample_fmt_is_planar((AVSampleFormat)m_InputSampleFormat);
             if (bIsPlanar) {
                 char* pPackedData = (char*)av_malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE +
-                        FF_INPUT_BUFFER_PADDING_SIZE);
-                planarToInterleaved(pPackedData, pDecodedData, m_pStream->codec->channels,
-                        m_pStream->codec->frame_size);
+                        AV_INPUT_BUFFER_PADDING_SIZE);
+                planarToInterleaved(pPackedData, pDecodedFrame, m_pStream->codec->channels,
+                        framesDecoded);
                 pBuffer = resampleAudio(pPackedData, framesDecoded,
-                        av_get_packed_sample_fmt((SampleFormat)m_InputSampleFormat));
+                        av_get_packed_sample_fmt((AVSampleFormat)m_InputSampleFormat));
                 av_free(pPackedData);
                 bNeedsResample = false;
             }
-#endif
             if (bNeedsResample) {
                 pBuffer = resampleAudio(pDecodedData, framesDecoded,
                         m_InputSampleFormat);
@@ -196,13 +179,7 @@ void AudioDecoderThread::decodePacket(AVPacket* pPacket)
             pushAudioMsg(pBuffer, m_LastFrameTime);
         }
     }
-#if LIBAVCODEC_VERSION_MAJOR > 53
-    avcodec_free_frame(&pDecodedFrame);
-#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 25, 0)
-    delete pDecodedFrame;
-#else
-    av_free(pDecodedData);
-#endif
+    av_frame_free(&pDecodedFrame);
     delete pTempPacket;
 }
 
@@ -222,7 +199,7 @@ void AudioDecoderThread::handleSeekDone(AVPacket* pPacket)
             // until the time is correct.
             m_State = DISCARDING;
         } else {
-            // Received frame that's too late, so insert a buffer of silence to 
+            // Received frame that's too late, so insert a buffer of silence to
             // compensate.
             insertSilence(m_LastFrameTime - m_SeekTime);
             m_LastFrameTime = m_SeekTime;
@@ -247,51 +224,36 @@ AudioBufferPtr AudioDecoderThread::resampleAudio(char* pDecodedData, int framesD
         int currentSampleFormat)
 {
     if (!m_pResampleContext) {
-#ifdef LIBAVRESAMPLE_VERSION
-        m_pResampleContext = avresample_alloc_context();
+        m_pResampleContext = swr_alloc();
         av_opt_set_int(m_pResampleContext, "in_channel_layout",
                 av_get_default_channel_layout(m_pStream->codec->channels), 0);
         av_opt_set_int(m_pResampleContext, "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
         av_opt_set_int(m_pResampleContext, "in_sample_rate", m_InputSampleRate, 0);
         av_opt_set_int(m_pResampleContext, "out_sample_rate", m_AP.m_SampleRate, 0);
         av_opt_set_int(m_pResampleContext, "in_sample_fmt",
-                (SampleFormat)currentSampleFormat, 0);
+                (AVSampleFormat)currentSampleFormat, 0);
         av_opt_set_int(m_pResampleContext, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
-        int err = avresample_open(m_pResampleContext);
+        int err = swr_init(m_pResampleContext);
         AVG_ASSERT(err >= 0);
-#else
-        m_pResampleContext = av_audio_resample_init(m_AP.m_Channels, 
-                m_pStream->codec->channels, m_AP.m_SampleRate, m_InputSampleRate,
-                SAMPLE_FMT_S16, (SampleFormat)currentSampleFormat, 16, 10, 0, 0.8);
-#endif
         AVG_ASSERT(m_pResampleContext);
     }
-#ifdef LIBAVRESAMPLE_VERSION
+
     uint8_t *pResampledData;
-    int leftoverSamples = avresample_available(m_pResampleContext);
-    int framesAvailable = leftoverSamples +
-            av_rescale_rnd(avresample_get_delay(m_pResampleContext) +
+    int framesAvailable = av_rescale_rnd(swr_get_delay(m_pResampleContext, m_InputSampleRate) +
                     framesDecoded, m_AP.m_SampleRate, m_InputSampleRate, AV_ROUND_UP);
     av_samples_alloc(&pResampledData, 0, 2, framesAvailable,
             AV_SAMPLE_FMT_S16, 0);
-    int framesResampled = avresample_convert(m_pResampleContext, &pResampledData, 0, 
-            framesAvailable, (uint8_t**)&pDecodedData, 0, framesDecoded);
+    int framesResampled = swr_convert(m_pResampleContext, &pResampledData,
+            framesAvailable, (const uint8_t**)&pDecodedData, framesDecoded);
     AudioBufferPtr pBuffer(new AudioBuffer(framesResampled, m_AP));
-    memcpy(pBuffer->getData(), pResampledData, 
+    memcpy(pBuffer->getData(), pResampledData,
             framesResampled*m_AP.m_Channels*sizeof(short));
     av_freep(&pResampledData);
-#else
-    short pResampledData[AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
-    int framesResampled = audio_resample(m_pResampleContext, pResampledData,
-            (short*)pDecodedData, framesDecoded);
-    AudioBufferPtr pBuffer(new AudioBuffer(framesResampled, m_AP));
-    memcpy(pBuffer->getData(), pResampledData, 
-            framesResampled*m_AP.m_Channels*sizeof(short));
-#endif
+
     return pBuffer;
 }
 
-void AudioDecoderThread::planarToInterleaved(char* pOutput, char* pInput, int numChannels,
+void AudioDecoderThread::planarToInterleaved(char* pOutput, AVFrame* pInputFrame, int numChannels,
         int numSamples)
 {
     AVG_ASSERT(numChannels <= 8);
@@ -304,7 +266,7 @@ void AudioDecoderThread::planarToInterleaved(char* pOutput, char* pInput, int nu
     int bytesPerSample = getBytesPerSample(m_InputSampleFormat);
     char * pPlanes[8] = {};
     for (i=0; i<numChannels; i++) {
-        pPlanes[i] = pInput + i*(numSamples*bytesPerSample);
+        pPlanes[i] = (char*)(pInputFrame->data[i]);
     }
     for (i=0; i<numSamples; i++) {
         for (j=0; j<numChannels; j++) {
@@ -347,22 +309,20 @@ void AudioDecoderThread::pushEOF()
 int AudioDecoderThread::getBytesPerSample(int sampleFormat)
 {
     switch (sampleFormat) {
-        case SAMPLE_FMT_U8:
+        case AV_SAMPLE_FMT_U8:
             return 1;
-        case SAMPLE_FMT_S16:
+        case AV_SAMPLE_FMT_S16:
             return 2;
-        case SAMPLE_FMT_S32:
+        case AV_SAMPLE_FMT_S32:
             return 4;
-        case SAMPLE_FMT_FLT:
+        case AV_SAMPLE_FMT_FLT:
             return 4;
-        case SAMPLE_FMT_DBL:
+        case AV_SAMPLE_FMT_DBL:
             return 8;
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(52, 3, 0)
-        case SAMPLE_FMT_S16P:
+        case AV_SAMPLE_FMT_S16P:
             return 2;
-        case SAMPLE_FMT_FLTP:
+        case AV_SAMPLE_FMT_FLTP:
             return 4;
-#endif
         default:
             AVG_LOG_ERROR("Unknown SampleFormat: " << sampleFormat << "\n");
             AVG_ASSERT(false);

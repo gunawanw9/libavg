@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -41,12 +41,9 @@ public:
     virtual ~CGLContext();
 
     void activate();
-
-    bool initVBlank(int rate);
+    void swapBuffers();
 
 private:
-    void initMacVBlank(int rate);
-
     CGLContextObj m_Context;
 };
 

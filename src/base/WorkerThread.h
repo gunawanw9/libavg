@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,6 @@
 #include "Command.h"
 #include "Exception.h"
 #include "Logger.h"
-#include "Queue.h"
-#include "ThreadHelper.h"
 #include "ThreadProfiler.h"
 #include "CmdQueue.h"
 

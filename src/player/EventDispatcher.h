@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,15 +23,17 @@
 #define _EventDispatcher_h_
 
 #include "../api.h"
-#include "InputDevice.h"
 
 #include <vector>
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 namespace avg {
 
 class Event;
 typedef boost::shared_ptr<class Event> EventPtr;
+class InputDevice;
+typedef boost::shared_ptr<class InputDevice> InputDevicePtr;
 class Contact;
 typedef boost::shared_ptr<class Contact> ContactPtr;
 class Player;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,15 +24,18 @@
 
 #include "../api.h"
 
-#include "VertexArray.h"
+#include "../base/Rect.h"
+#include "Pixel32.h"
 #include "GLShaderParam.h"
 
-#include "../base/Rect.h"
+#include <boost/shared_ptr.hpp>
 
 namespace avg {
 
 class OGLShader;
 typedef boost::shared_ptr<OGLShader> OGLShaderPtr;
+class VertexArray;
+typedef boost::shared_ptr<VertexArray> VertexArrayPtr;
 
 class AVG_API ImagingProjection
 {
@@ -42,7 +45,7 @@ public:
     virtual ~ImagingProjection();
 
     void setColor(const Pixel32& color);
-    void draw(const OGLShaderPtr& pShader);
+    void draw(GLContext* pContext, const OGLShaderPtr& pShader);
 
 private:
     void init(IntPoint srcSize, IntRect destRect);

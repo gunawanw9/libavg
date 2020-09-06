@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -120,12 +120,16 @@ string Event::typeStr(Event::Type type)
             return "CURSOR_OVER";
         case CURSOR_OUT:
             return "CURSOR_OUT";
+        case MOUSE_WHEEL:
+            return "MOUSE_WHEEL";
         case CUSTOM_EVENT:
             return "CUSTOM_EVENT";
         case QUIT:
             return "QUIT";
-        default:
+        case UNKNOWN:
             return "UNKNOWN";
+        default:
+            return "undefined event type";
     }
         
 }

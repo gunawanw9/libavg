@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -56,11 +56,15 @@ void GraphicsTest::createResultImgDir()
     }
 }
 
-BitmapPtr GraphicsTest::loadTestBmp(const std::string& sFName, PixelFormat pf)
+std::string GraphicsTest::getTestBmpName(const string& sFName)
+{ 
+    return getMediaDir()+"/"+sFName+".png";
+}
+
+BitmapPtr GraphicsTest::loadTestBmp(const string& sFName, PixelFormat pf)
 {
     try {
-        string sFullName = getSrcDirName()+"../test/media/"+sFName+".png";
-        return loadBitmap(sFullName, pf);
+        return loadBitmap(getTestBmpName(sFName), pf);
     } catch (Exception & ex) {
         cerr << ex.getStr() << endl;
         throw;
@@ -72,7 +76,7 @@ void GraphicsTest::testEqual(Bitmap& resultBmp, const string& sFName, PixelForma
 {
     BitmapPtr pBaselineBmp;
     try {
-        string sFullName = getSrcDirName()+"baseline/"+sFName+".png";
+        string sFullName = getBaselineDir()+"/"+sFName+".png";
         pBaselineBmp = loadBitmap(sFullName, pf);
     } catch (Exception & ex) {
         cerr << ex.getStr() << endl;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,6 @@
 #include "PixelFormat.h"
 
 #include "../base/GLMHelper.h"
-
-#include <boost/shared_ptr.hpp>
 
 #include <vector>
 

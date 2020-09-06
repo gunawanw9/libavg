@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,8 +24,7 @@
 
 #include "../api.h"
 #include "Filter.h"
-#include "Bitmap.h"
-#include "TextureMover.h"
+#include "WrapMode.h"
 
 namespace avg {
 
@@ -39,6 +38,11 @@ class MCFBO;
 typedef boost::shared_ptr<MCFBO> MCFBOPtr;
 class MCTexture;
 typedef boost::shared_ptr<MCTexture> MCTexturePtr;
+class GLTexture;
+typedef boost::shared_ptr<GLTexture> GLTexturePtr;
+class TextureMover;
+typedef boost::shared_ptr<TextureMover> TextureMoverPtr;
+class GLContext;
 
 class AVG_API GPUFilter: public Filter
 {
@@ -50,11 +54,11 @@ public:
     virtual ~GPUFilter();
 
     virtual BitmapPtr apply(BitmapPtr pBmpSource);
-    virtual void apply(GLTexturePtr pSrcTex);
-    virtual void applyOnGPU(GLTexturePtr pSrcTex) = 0;
-    GLTexturePtr getDestTex(int i=0) const;
-    BitmapPtr getImage() const;
-    FBOPtr getFBO(int i=0);
+    virtual void apply(GLContext* pContext, GLTexturePtr pSrcTex);
+    virtual void applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex) = 0;
+    GLTexturePtr getDestTex(GLContext* pContext, int i=0) const;
+    BitmapPtr getImage(GLContext* pContext) const;
+    FBOPtr getFBO(GLContext* pContext, int i=0);
 
     const IntRect& getDestRect() const;
     const IntPoint& getSrcSize() const;
@@ -62,11 +66,10 @@ public:
     
 protected:
     void setDimensions(const IntPoint& srcSize);
-    void setDimensions(const IntPoint& srcSize, const IntRect& destRect,
-            unsigned texMode);
+    void setDimensions(const IntPoint& srcSize, const IntRect& destRect);
     OGLShaderPtr getShader() const;
 
-    void draw(GLTexturePtr pTex);
+    void draw(GLContext* pContext, GLTexturePtr pTex, const WrapMode& wrapMode);
     int getBlurKernelRadius(float stdDev) const;
     MCTexturePtr calcBlurKernelTex(float stdDev, float opacity, bool bUseFloat) const;
 

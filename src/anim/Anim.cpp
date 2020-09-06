@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -69,6 +69,7 @@ void Anim::start(bool)
                 "Animation playback can only be started when the player is running."));
     }
     m_bRunning = true;
+    m_This = shared_from_this();
     if (m_bIsRoot) {
         Player::get()->registerPreRenderListener(this);
     }
@@ -118,6 +119,7 @@ void Anim::setStopped()
             exit(5);
         }
     }
+    m_This = AnimPtr();
 }
 
 }

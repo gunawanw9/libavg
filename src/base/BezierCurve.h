@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,10 @@ public:
 
     glm::vec2 interpolate(float t) const;
     glm::vec2 getDeriv(float t) const;
+    float estimateLen() const;
+
+    const glm::vec2& getPt(int i) const;
+    void setPt(int i, const glm::vec2& pt);
 
 private:
     glm::vec2 m_P0;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -52,16 +52,16 @@ GPURGB2YUVFilter::~GPURGB2YUVFilter()
     ObjectCounter::get()->decRef(&typeid(*this));
 }
 
-void GPURGB2YUVFilter::applyOnGPU(GLTexturePtr pSrcTex)
+void GPURGB2YUVFilter::applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex)
 {
     getShader()->activate();
-    draw(pSrcTex);
+    draw(pContext, pSrcTex, WrapMode());
     GLContext::checkError("GPURGB2YUVFilter::applyOnGPU()");
 }
 
-BitmapPtr GPURGB2YUVFilter::getResults()
+BitmapPtr GPURGB2YUVFilter::getResults(GLContext* pContext)
 {
-    BitmapPtr pBmp = getFBO()->getImage();
+    BitmapPtr pBmp = getFBO(pContext)->getImage();
 
     return pBmp;
 }

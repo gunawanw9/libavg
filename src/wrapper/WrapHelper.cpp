@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,32 @@
 using namespace avg;
 using namespace std;
 using namespace boost::python;
+
+void* from_python_sequence_base::convertible(PyObject* obj_ptr)
+{
+    if (!(   PyList_Check(obj_ptr)
+          || PyTuple_Check(obj_ptr)
+          || PyIter_Check(obj_ptr)
+          || PyRange_Check(obj_ptr)
+          || (   !PyString_Check(obj_ptr)
+              && !PyUnicode_Check(obj_ptr)
+              && (   obj_ptr->ob_type == 0
+                  || obj_ptr->ob_type->ob_type == 0
+                  || obj_ptr->ob_type->ob_type->tp_name == 0
+                  || std::strcmp(
+                       obj_ptr->ob_type->ob_type->tp_name,
+                       "Boost.Python.class") != 0)
+              && PyObject_HasAttrString(obj_ptr, "__len__")
+              && PyObject_HasAttrString(obj_ptr, "__getitem__")))) return 0;
+    boost::python::handle<> obj_iter(
+      boost::python::allow_null(PyObject_GetIter(obj_ptr)));
+    if (!obj_iter.get()) { // must be convertible to an iterator
+      PyErr_Clear();
+      return 0;
+    }
+    return obj_ptr;
+}
+
 
 namespace Vec2Helper
 {
@@ -205,6 +231,9 @@ struct vec2_from_python
         if (PySequence_Size(obj_ptr) != 2) {
             return 0;
         }
+        if (PyString_Check(obj_ptr)) {
+            return 0;
+        }
         return obj_ptr;
     }
 
@@ -243,6 +272,10 @@ struct vec3_from_python
         if (PySequence_Size(obj_ptr) != 3) {
             return 0;
         }
+        if (PyString_Check(obj_ptr)) {
+            return 0;
+        }
+
         return obj_ptr;
     }
 
@@ -350,14 +383,15 @@ struct UTF8String_from_unicode
     }
 };
 
-struct UTF8String_from_string
+template<class T>
+struct String_from_string
 {
-    UTF8String_from_string()
+    String_from_string()
     {
         boost::python::converter::registry::push_back(
                 &convertible,
                 &construct,
-                boost::python::type_id<UTF8String>());
+                boost::python::type_id<T>());
     }
 
     static void* convertible(PyObject* obj_ptr)
@@ -371,9 +405,9 @@ struct UTF8String_from_string
     {
         const char * psz = PyString_AsString(obj_ptr);
         void* storage = (
-                (boost::python::converter::rvalue_from_python_storage<UTF8String>*)data)
+                (boost::python::converter::rvalue_from_python_storage<T>*)data)
                         ->storage.bytes;
-        new (storage) UTF8String(psz);
+        new (storage) T(psz);
         data->convertible = storage;
     }
 };
@@ -389,7 +423,7 @@ void exportMessages(object& nodeClass, const string& sClassName)
     }
 };
 
-struct type_info_to_string{
+struct type_info_to_string {
     static PyObject* convert(const std::type_info& info)
     {
         boost::python::object result(ObjectCounter::get()->demangle(info.name()));
@@ -397,14 +431,35 @@ struct type_info_to_string{
     }
 };
 
+PyObject* createExceptionClass(const char* pszName)
+{
+    string scopeName = extract<UTF8String>(scope().attr("__name__"));
+    string qualifiedName0 = scopeName + "." + pszName;
+    char* qualifiedName1 = const_cast<char*>(qualifiedName0.c_str());
+
+    PyObject* typeObj = PyErr_NewException(qualifiedName1, PyExc_RuntimeError, 0);
+    if (!typeObj) {
+        throw_error_already_set();
+    }
+    scope().attr(pszName) = handle<>(borrowed(typeObj));
+    return typeObj;
+}
+
 
 void export_base()
 {
+    // string
+    to_python_converter<UTF8String, UTF8String_to_unicode>();
+    UTF8String_from_unicode();
+    String_from_string<UTF8String>();
+    String_from_string<string>();
+
     // Exceptions
+    PyObject* pExceptionTypeObj = createExceptionClass("Exception");
 
     translateException<exception>(PyExc_RuntimeError);
     translateException<out_of_range>(PyExc_IndexError);
-    translateException<Exception>(PyExc_RuntimeError);
+    translateException<Exception>(pExceptionTypeObj);
     to_python_converter< exception, Exception_to_python_exception<exception> >();
     to_python_converter< Exception, Exception_to_python_exception<Exception> >();
    
@@ -416,8 +471,8 @@ void export_base()
    
     // vector<vec2>
     to_python_converter<vector<glm::vec2>, to_list<vector<glm::vec2> > >();    
-    from_python_sequence<vector<IntPoint>, variable_capacity_policy>();
-    from_python_sequence<vector<glm::vec2>, variable_capacity_policy>();
+    from_python_sequence<vector<IntPoint> >();
+    from_python_sequence<vector<glm::vec2> >();
 
     // vec3
     to_python_converter<glm::ivec3, Vec3_to_python_tuple<glm::ivec3> >();
@@ -431,22 +486,17 @@ void export_base()
     vec4_from_python<glm::ivec4, int>();
     vec4_from_python<glm::vec4, float>();
     
-    // vector<vec3>
+    // vector<XXX>
     to_python_converter<vector<glm::ivec3>, to_list<vector<glm::ivec3> > >();    
     to_python_converter<vector<glm::vec3>, to_list<vector<glm::vec3> > >();    
-    from_python_sequence<vector<glm::ivec3>, variable_capacity_policy>();
-    from_python_sequence<vector<glm::vec3>, variable_capacity_policy>();
-
-    // string
-    to_python_converter<UTF8String, UTF8String_to_unicode>();
-    UTF8String_from_unicode();
-    UTF8String_from_string();
+    from_python_sequence<vector<glm::ivec3> >();
+    from_python_sequence<vector<glm::vec3> >();
 
     to_python_converter<vector<string>, to_list<vector<string> > >();    
-    from_python_sequence<vector<string>, variable_capacity_policy>();
+    from_python_sequence<vector<string> >();
   
-    from_python_sequence<vector<float>, variable_capacity_policy>();
-    from_python_sequence<vector<int>, variable_capacity_policy>();
+    from_python_sequence<vector<float> >();
+    from_python_sequence<vector<int> >();
 
     to_python_converter<std::type_info, type_info_to_string>();
     //Maps

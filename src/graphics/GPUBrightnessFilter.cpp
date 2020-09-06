@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -54,12 +54,12 @@ GPUBrightnessFilter::~GPUBrightnessFilter()
     ObjectCounter::get()->decRef(&typeid(*this));
 }
 
-void GPUBrightnessFilter::applyOnGPU(GLTexturePtr pSrcTex)
+void GPUBrightnessFilter::applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex)
 {
     getShader()->activate();
-    m_pTextureParam->set(0);
-    m_pAlphaParam->set(m_Alpha);
-    draw(pSrcTex);
+    m_pTextureParam->set(pContext, 0);
+    m_pAlphaParam->set(pContext, m_Alpha);
+    draw(pContext, pSrcTex, WrapMode());
 }
 
 }

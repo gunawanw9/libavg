@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,12 @@
 #include "RectNode.h"
 
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 
 #include "../base/Exception.h"
 #include "../base/MathHelper.h"
+
+#include "../graphics/VertexData.h"
 
 #include <iostream>
 #include <sstream>
@@ -48,8 +51,8 @@ void RectNode::registerType()
     TypeRegistry::get()->registerType(def);
 }
 
-RectNode::RectNode(const ArgList& args)
-    : FilledVectorNode(args)
+RectNode::RectNode(const ArgList& args, const string& sPublisherName)
+    : FilledVectorNode(args, sPublisherName)
 {
     args.setMembers(this);
     setSize(args.getArgVal<glm::vec2>("size"));
@@ -109,7 +112,7 @@ float RectNode::getAngle() const
 
 void RectNode::setAngle(float angle)
 {
-    m_Angle = fmod(angle, 2*PI);
+    m_Angle = fmod(angle, 2*(float)M_PI);
     setDrawNeeded();
 }
 
@@ -125,15 +128,6 @@ glm::vec2 RectNode::toGlobal(const glm::vec2& localPos) const
     glm::vec2 pivot = m_Rect.tl + m_Rect.size()/2.f;
     glm::vec2 globalPos = getRotatedPivot(localPos, m_Angle, pivot); 
     return globalPos + m_Rect.tl;
-}
-
-void RectNode::getElementsByPos(const glm::vec2& pos, vector<NodePtr>& pElements)
-{
-    if (pos.x >= 0 && pos.y >= 0 && pos.x < m_Rect.size().x && pos.y < m_Rect.size().y 
-            && reactsToMouseEvents())
-    {
-        pElements.push_back(getSharedThis());
-    }
 }
 
 void RectNode::calcVertexes(const VertexDataPtr& pVertexData, Pixel32 color)
@@ -172,6 +166,13 @@ void RectNode::calcFillVertexes(const VertexDataPtr& pVertexData, Pixel32 color)
     glm::vec2 trTexCoord = glm::vec2(getFillTexCoord2().x, getFillTexCoord1().y);
     pVertexData->appendPos(rp4, trTexCoord, color);
     pVertexData->appendQuadIndexes(1, 0, 2, 3);
+}
+  
+bool RectNode::isInside(const glm::vec2& pos)
+{
+    return FilledVectorNode::isInside(pos) ||
+            (pos.x >= 0 && pos.y >= 0 && pos.x < m_Rect.size().x &&
+              pos.y < m_Rect.size().y);
 }
 
 }

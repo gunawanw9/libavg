@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@ class AVG_API PolyLineNode : public VectorNode
     public:
         static void registerType();
         
-        PolyLineNode(const ArgList& args);
+        PolyLineNode(const ArgList& args, const std::string& sPublisherName="Node");
         virtual ~PolyLineNode();
 
         const std::vector<glm::vec2>& getPos() const;

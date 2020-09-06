@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,11 +24,14 @@
 
 #include "../avgconfigwrapper.h"
 
-#include "../graphics/Bitmap.h"
-
 #include "WrapFFMpeg.h"
 
+#include <boost/shared_ptr.hpp>
+
 namespace avg {
+
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
 
 class AVG_API FFMpegFrameDecoder
 {

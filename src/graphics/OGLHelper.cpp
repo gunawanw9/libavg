@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,7 @@ namespace glproc {
     PFNGLVERTEXATTRIBPOINTERPROC VertexAttribPointer;
     PFNGLENABLEVERTEXATTRIBARRAYPROC EnableVertexAttribArray;
     PFNGLBINDATTRIBLOCATIONPROC BindAttribLocation;
-#if defined(linux) && !defined(AVG_ENABLE_EGL)
+#if defined(__linux__) && !defined(AVG_ENABLE_EGL)
     PFNGLXSWAPINTERVALEXTPROC SwapIntervalEXT;
 #endif
 #ifdef _WIN32
@@ -307,7 +307,7 @@ GLfunction getFuzzyProcAddress(const char * psz)
     return pProc;
 }
 
-#if defined(linux) && !defined(AVG_ENABLE_EGL)
+#if defined(__linux__) && !defined(AVG_ENABLE_EGL)
 GLfunction getglXProcAddress(const char * psz)
 {
     GLfunction pProc = (GLfunction)glXGetProcAddress((const GLubyte *)psz);
@@ -422,7 +422,7 @@ namespace glproc {
                 getFuzzyProcAddress("glEnableVertexAttribArray");
         BindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)
                 getFuzzyProcAddress("glBindAttribLocation");
-#if defined(linux) && !defined(AVG_ENABLE_EGL)
+#if defined(__linux__) && !defined(AVG_ENABLE_EGL)
         SwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)
                 getglXProcAddress("glXSwapIntervalEXT");
 #endif

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -78,15 +78,14 @@ void ThreadProfiler::start()
 
 void ThreadProfiler::restart()
 {
-    ZoneVector::iterator it;
-    for (it = m_Zones.begin(); it != m_Zones.end(); ++it) {
+    for (auto it = m_Zones.begin(); it != m_Zones.end(); ++it) {
         (*it)->restart();
     }
 }
 
 void ThreadProfiler::startZone(const ProfilingZoneID& zoneID)
 {
-    ZoneMap::iterator it = m_ZoneMap.find(&zoneID);
+    auto it = m_ZoneMap.find(&zoneID);
     // Duplicated code to avoid instantiating a new smart pointer when it's not
     // necessary.
     if (it == m_ZoneMap.end()) {
@@ -102,7 +101,7 @@ void ThreadProfiler::startZone(const ProfilingZoneID& zoneID)
 
 void ThreadProfiler::stopZone(const ProfilingZoneID& zoneID)
 {
-    ZoneMap::iterator it = m_ZoneMap.find(&zoneID);
+    auto it = m_ZoneMap.find(&zoneID);
     ProfilingZonePtr& pZone = it->second;
     pZone->stop();
     m_ActiveZones.pop_back();
@@ -117,8 +116,7 @@ void ThreadProfiler::dumpStatistics()
         AVG_TRACE(m_LogCategory, Logger::severity::INFO,
                 "---------                          ---------");
 
-        ZoneVector::iterator it;
-        for (it = m_Zones.begin(); it != m_Zones.end(); ++it) {
+        for (auto it = m_Zones.begin(); it != m_Zones.end(); ++it) {
             AVG_TRACE(m_LogCategory, Logger::severity::INFO,
                     std::setw(35) << std::left 
                     << ((*it)->getIndentString()+(*it)->getName())
@@ -130,8 +128,7 @@ void ThreadProfiler::dumpStatistics()
 
 void ThreadProfiler::reset()
 {
-    ZoneVector::iterator it;
-    for (it = m_Zones.begin(); it != m_Zones.end(); ++it) {
+    for (auto it = m_Zones.begin(); it != m_Zones.end(); ++it) {
         (*it)->reset();
     }
 }

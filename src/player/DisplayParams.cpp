@@ -1,5 +1,5 @@
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -131,14 +131,7 @@ void DisplayParams::setResolution(bool bFullscreen, int width, int height, int b
     if (bpp) {
         m_BPP = bpp;
     }
-    wp.m_Viewport.tl.x = 0;
-    wp.m_Viewport.tl.y = 0;
-    if (width) {
-        wp.m_Viewport.br.x = width;
-    }
-    if (height) {
-        wp.m_Viewport.br.y = height;
-    }
+    wp.m_Size = IntPoint(width, height);
 }
 
 void DisplayParams::setFullscreen(bool bFullscreen)

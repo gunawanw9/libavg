@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 
 #include "PBO.h"
 #include "GLContext.h"
+#include "GLTexture.h"
 
 #include "../base/Logger.h"
 #include "../base/Exception.h"
@@ -106,7 +107,7 @@ void PBO::moveTextureToPBO(GLTexture& tex, int mipmapLevel)
     glproc::BindBuffer(GL_PIXEL_PACK_BUFFER_EXT, m_PBOID);
     GLContext::checkError("PBO::moveTextureToPBO BindBuffer()");
 
-    tex.activate(GL_TEXTURE0);
+    tex.activate(WrapMode(), GL_TEXTURE0);
 
     glGetTexImage(GL_TEXTURE_2D, mipmapLevel, GLTexture::getGLFormat(getPF()), 
             GLTexture::getGLType(getPF()), 0);
@@ -167,7 +168,7 @@ void PBO::moveToTexture(GLTexture& tex)
     } 
     glproc::BindBuffer(GL_PIXEL_UNPACK_BUFFER_EXT, m_PBOID);
     GLContext::checkError("PBO::moveToTexture: glBindBuffer()");
-    tex.activate(GL_TEXTURE0);
+    tex.activate(WrapMode(), GL_TEXTURE0);
 #ifdef __APPLE__
     // See getStride()
     if (getPF() == A8) {

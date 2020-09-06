@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ public:
     
     void setParams(const glm::vec2& offset, float stdDev, float opacity, 
             const Pixel32& color);
-    virtual void applyOnGPU(GLTexturePtr pSrcTex);
+    virtual void applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex);
 
 private:
     void setDimensions(IntPoint size, float stdDev, const glm::vec2& offset);
@@ -49,6 +49,7 @@ private:
     float m_StdDev;
     float m_Opacity;
     Pixel32 m_Color;
+    WrapMode m_WrapMode;
 
     MCTexturePtr m_pGaussCurveTex;
     ImagingProjectionPtr m_pProjection2;

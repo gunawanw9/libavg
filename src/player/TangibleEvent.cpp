@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2011 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -41,11 +41,9 @@ TangibleEvent::~TangibleEvent()
 {
 }
 
-CursorEventPtr TangibleEvent::cloneAs(Type eventType) const
+CursorEventPtr TangibleEvent::copy() const
 {
-    TangibleEventPtr pClone(new TangibleEvent(*this));
-    pClone->m_Type = eventType;
-    return pClone;
+    return TangibleEventPtr(new TangibleEvent(*this));
 }
 
 int TangibleEvent::getMarkerID() const
@@ -63,7 +61,7 @@ void TangibleEvent::trace()
     CursorEvent::trace();
     AVG_TRACE(Logger::category::EVENTS, Logger::severity::DEBUG, "pos: " << getPos() 
             << ", ID: " << getCursorID()
-            << ", Marker ID: " << m_MarkerID);
+            << ", Marker ID: " << m_MarkerID)
 }
       
 }

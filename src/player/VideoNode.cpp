@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 #include "Player.h"
 #include "OGLSurface.h"
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 #include "Canvas.h"
 
 #include "../base/Exception.h"
@@ -38,9 +39,6 @@
 
 #include "../video/AsyncVideoDecoder.h"
 #include "../video/SyncVideoDecoder.h"
-#ifdef AVG_ENABLE_VDPAU
-#include "../video/VDPAUDecoder.h"
-#endif
 
 #include <iostream>
 #include <sstream>
@@ -65,16 +63,15 @@ void VideoNode::registerType()
         .addArg(Arg<int>("queuelength", 8, false, 
                 offsetof(VideoNode, m_QueueLength)))
         .addArg(Arg<float>("volume", 1.0, false, offsetof(VideoNode, m_Volume)))
-        .addArg(Arg<bool>("accelerated", false, false,
-                offsetof(VideoNode, m_bUsesHardwareAcceleration)))
         .addArg(Arg<bool>("enablesound", true, false,
                 offsetof(VideoNode, m_bEnableSound)))
         ;
     TypeRegistry::get()->registerType(def);
 }
 
-VideoNode::VideoNode(const ArgList& args)
-    : m_VideoState(Unloaded),
+VideoNode::VideoNode(const ArgList& args,const string& sPublisherName)
+    : RasterNode(sPublisherName),
+      m_VideoState(Unloaded),
       m_bFrameAvailable(false),
       m_bFirstFrameDecoded(false),
       m_Filename(""),
@@ -85,7 +82,6 @@ VideoNode::VideoNode(const ArgList& args)
       m_SeekBeforeCanRenderTime(0),
       m_pDecoder(0),
       m_Volume(1.0),
-      m_bUsesHardwareAcceleration(false),
       m_bEnableSound(true),
       m_AudioID(-1)
 {
@@ -127,6 +123,9 @@ void VideoNode::connectDisplay()
     }
     if (m_VideoState == Paused) {
         m_PauseStartTime = CurTime;
+        if (m_AudioID != -1) {
+            AudioEngine::get()->pauseSource(m_AudioID);
+        }
     } 
 }
 
@@ -196,6 +195,11 @@ void VideoNode::seekToFrame(int frameNum)
         long long destTime = (long long)(frameNum*1000.0/m_pDecoder->getStreamFPS());
         seek(destTime);
     }
+}
+
+bool VideoNode::isSeeking() const
+{
+    return m_bSeekPending;
 }
 
 std::string VideoNode::getStreamPixelFormat() const
@@ -324,12 +328,6 @@ void VideoNode::setEOFCallback(PyObject * pEOFCallback)
     }
 }
 
-bool VideoNode::isAccelerated() const
-{
-    exceptionIfUnloaded("isAccelerated");
-    return m_bUsesHardwareAcceleration;
-}
-
 const UTF8String& VideoNode::getHRef() const
 {
     return m_href;
@@ -455,7 +453,7 @@ void VideoNode::open()
     m_FramesTooLate = 0;
     m_FramesInRowTooLate = 0;
     m_FramesPlayed = 0;
-    m_pDecoder->open(m_Filename, m_bUsesHardwareAcceleration, m_bEnableSound);
+    m_pDecoder->open(m_Filename, m_bEnableSound);
     VideoInfo videoInfo = m_pDecoder->getVideoInfo();
     if (!videoInfo.m_bHasVideo) {
         m_pDecoder->close();
@@ -469,7 +467,6 @@ void VideoNode::open()
     m_bSeekPending = false;
     m_bFirstFrameDecoded = false;
     m_bFrameAvailable = false;
-    m_bUsesHardwareAcceleration = videoInfo.m_bUsesVDPAU;
     setViewport(-32767, -32767, -32767, -32767);
 }
 
@@ -484,7 +481,8 @@ void VideoNode::startDecoding()
     VideoInfo videoInfo = m_pDecoder->getVideoInfo();
     if (m_FPS != 0.0) {
         if (videoInfo.m_bHasAudio) {
-            AVG_LOG_WARNING(getID() + ": Can't set FPS if video contains audio. Ignored.");
+            AVG_LOG_WARNING(getID() +
+                    ": Can't set FPS if video contains audio. Ignored.");
         } else {
             m_pDecoder->setFPS(m_FPS);
         }
@@ -509,15 +507,13 @@ void VideoNode::startDecoding()
 void VideoNode::createTextures(IntPoint size)
 {
     PixelFormat pf = getPixelFormat();
-    bool bMipmap = getMaterial().getUseMipmaps();
+    bool bMipmap = getMipmap();
     GLContextManager* pCM = GLContextManager::get();
     if (pixelFormatIsPlanar(pf)) {
         m_pTextures[0] = pCM->createTexture(size, I8, bMipmap);
         IntPoint halfSize(size.x/2, size.y/2);
-        m_pTextures[1] = pCM->createTexture(halfSize, I8, bMipmap,
-                GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, false, 128);
-        m_pTextures[2] = pCM->createTexture(halfSize, I8, bMipmap,
-                GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, false, 128);
+        m_pTextures[1] = pCM->createTexture(halfSize, I8, bMipmap, false, 128);
+        m_pTextures[2] = pCM->createTexture(halfSize, I8, bMipmap, false, 128);
         if (pixelFormatHasAlpha(pf)) {
             m_pTextures[3] = pCM->createTexture(size, I8, bMipmap);
         }
@@ -642,7 +638,7 @@ void VideoNode::preRender(const VertexArrayPtr& pVA, bool bIsParentActive,
         float parentEffectiveOpacity)
 {
     ScopeTimer timer(PrerenderProfilingZone);
-    Node::preRender(pVA, bIsParentActive, parentEffectiveOpacity);
+    AreaNode::preRender(pVA, bIsParentActive, parentEffectiveOpacity);
     if (isVisible()) {
         if (m_VideoState != Unloaded) {
             if (m_VideoState == Playing) {
@@ -677,22 +673,12 @@ void VideoNode::preRender(const VertexArrayPtr& pVA, bool bIsParentActive,
 
 static ProfilingZoneID RenderProfilingZone("VideoNode::render");
 
-void VideoNode::render()
+void VideoNode::render(GLContext* pContext, const glm::mat4& transform)
 {
     ScopeTimer timer(RenderProfilingZone);
     if (m_VideoState != Unloaded && m_bFirstFrameDecoded) {
-        blt32();
+        blt32(pContext, transform);
     }
-}
-
-VideoNode::VideoAccelType VideoNode::getVideoAccelConfig()
-{
-#ifdef AVG_ENABLE_VDPAU
-    if (VDPAUDecoder::isAvailable()) {
-        return VDPAU;
-    }
-#endif
-    return NONE;
 }
 
 bool VideoNode::renderFrame()

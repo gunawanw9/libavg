@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,8 @@
 #ifndef _ThreadHelper_H_
 #define _ThreadHelper_H_
 
-#include "Exception.h"
+#include "../api.h"
+
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 

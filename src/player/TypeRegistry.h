@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,13 +26,10 @@
 
 #include "../api.h"
 #include "WrapPython.h"
-#include "Node.h"
-#include "ArgList.h"
 #include "TypeDefinition.h"
 
 #include <map>
 #include <string>
-#include <sstream>
 
 namespace avg {
 

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 #include "OGLHelper.h"
 #include "GLContext.h"
 #include "Filterfliprgb.h"
+#include "GLTexture.h"
+#include "PBO.h"
 
 #include "../base/Exception.h"
 #include "../base/StringHelper.h"
@@ -60,19 +62,9 @@ FBO::~FBO()
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&oldFBOID);
     glproc::BindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     
-    for (unsigned i=0; i<m_pTextures.size(); ++i) {
-        glproc::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, 
-                GL_TEXTURE_2D, 0, 0);
-    }
-   
     GLContext* pContext = GLContext::getCurrent();
     if (pContext) {
-        pContext->returnFBOToCache(m_FBO);
         bool bMultisample = (getMultisampleSamples() > 1);
-        if (bMultisample) {
-            glproc::DeleteRenderbuffers(1, &m_ColorBuffer);
-            pContext->returnFBOToCache(m_OutputFBO);
-        }
         if (getUsePackedDepthStencil() && isPackedDepthStencilSupported()) {
             glproc::DeleteRenderbuffers(1, &m_StencilBuffer);
             glproc::FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
@@ -89,7 +81,11 @@ FBO::~FBO()
             glproc::FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
                     GL_RENDERBUFFER, 0);
         }
-        glproc::BindFramebuffer(GL_FRAMEBUFFER, oldFBOID);
+        pContext->returnFBOToCache(m_FBO);
+        if (bMultisample) {
+            glproc::DeleteRenderbuffers(1, &m_ColorBuffer);
+            pContext->returnFBOToCache(m_OutputFBO);
+        }
         GLContext::checkError("~FBO");
     }
 }
@@ -279,9 +275,14 @@ void FBO::init()
             glproc::FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
                     GL_RENDERBUFFER, m_StencilBuffer);
             GLContext::checkError("FBO::init: FramebufferRenderbuffer(STENCIL)");
-        } else {
-            AVG_ASSERT_MSG(!getUseStencil(), 
-                "Multisample FBO with stencil & not depth buffers not implemented yet.");
+        } else if (getUseStencil()) {
+            glproc::GenRenderbuffers(1, &m_StencilBuffer);
+            glproc::BindRenderbuffer(GL_RENDERBUFFER, m_StencilBuffer);
+            glproc::RenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, 
+                    GL_STENCIL_INDEX8, glSize.x, glSize.y);
+            glproc::FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                    GL_RENDERBUFFER, m_StencilBuffer);
+            GLContext::checkError("FBO::init: FramebufferRenderbuffer(STENCIL)");
         }
         checkError("init multisample");
         m_OutputFBO = pContext->genFBO();

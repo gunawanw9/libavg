@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 #include "SoundNode.h"
 #include "Player.h"
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 #include "Canvas.h"
 
 #include "../base/Exception.h"
@@ -56,8 +57,9 @@ void SoundNode::registerType()
     TypeRegistry::get()->registerType(def);
 }
 
-SoundNode::SoundNode(const ArgList& args)
-    : m_Filename(""),
+SoundNode::SoundNode(const ArgList& args, const string& sPublisherName)
+    : AreaNode(sPublisherName),
+      m_Filename(""),
       m_pEOFCallback(0),
       m_SeekBeforeCanRenderTime(0),
       m_pDecoder(0),
@@ -157,6 +159,7 @@ void SoundNode::connectDisplay()
     }
     if (m_State == Paused) {
         m_PauseStartTime = curTime;
+        AudioEngine::get()->pauseSource(m_AudioID);
     } 
 }
 
@@ -294,7 +297,7 @@ void SoundNode::seek(long long destTime)
 
 void SoundNode::open()
 {
-    m_pDecoder->open(m_Filename, false, true);
+    m_pDecoder->open(m_Filename, true);
     VideoInfo videoInfo = m_pDecoder->getVideoInfo();
     if (!videoInfo.m_bHasAudio) {
         throw Exception(AVG_ERR_VIDEO_GENERAL, 

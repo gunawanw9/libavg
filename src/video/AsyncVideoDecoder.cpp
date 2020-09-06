@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,14 +21,11 @@
 
 #include "AsyncVideoDecoder.h"
 
-#ifdef AVG_ENABLE_VDPAU
-#include "VDPAUDecoder.h"
-#include "VDPAUHelper.h"
-#endif
-
 #include "../base/ObjectCounter.h"
 #include "../base/Exception.h"
 #include "../base/ScopeTimer.h"
+
+#include "../audio/AudioParams.h"
 
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
@@ -64,7 +61,7 @@ AsyncVideoDecoder::~AsyncVideoDecoder()
     ObjectCounter::get()->decRef(&typeid(*this));
 }
 
-void AsyncVideoDecoder::open(const std::string& sFilename, bool bUseHardwareAcceleration, 
+void AsyncVideoDecoder::open(const std::string& sFilename, 
         bool bEnableSound)
 {
     m_NumSeeksSent = 0;
@@ -75,8 +72,9 @@ void AsyncVideoDecoder::open(const std::string& sFilename, bool bUseHardwareAcce
     m_bWasVSeeking = false;
     m_bWasSeeking = false;
     m_CurVideoFrameTime = -1;
+    m_LastAudioFrameTime = 0;
     
-    VideoDecoder::open(sFilename, bUseHardwareAcceleration, bEnableSound);
+    VideoDecoder::open(sFilename, bEnableSound);
 
     if (getVideoInfo().m_bHasVideo && m_bUseStreamFPS) {
         m_FPS = getStreamFPS();
@@ -109,7 +107,7 @@ void AsyncVideoDecoder::startDecoding(bool bDeliverYCbCr, const AudioParams* pAP
 
         m_pVDecoderThread = new boost::thread(VideoDecoderThread(
                 *m_pVCmdQ, *m_pVMsgQ, packetQ, getVideoStream(), 
-                getSize(), getPixelFormat(), usesVDPAU()));
+                getSize(), getPixelFormat()));
     }
     
     if (getVideoInfo().m_bHasAudio) {
@@ -118,8 +116,8 @@ void AsyncVideoDecoder::startDecoding(bool bDeliverYCbCr, const AudioParams* pAP
         m_pAStatusQ = AudioMsgQueuePtr(new AudioMsgQueue(AUDIO_STATUS_QUEUE_LENGTH));
         VideoMsgQueue& packetQ = *m_PacketQs[getAStreamIndex()];
         m_pADecoderThread = new boost::thread(
-                AudioDecoderThread(*m_pACmdQ, *m_pAMsgQ, packetQ, getAudioStream(), *pAP));
-        m_LastAudioFrameTime = 0;
+                AudioDecoderThread(*m_pACmdQ, *m_pAMsgQ, packetQ, getAudioStream(),
+                        *pAP));
     }
 }
 
@@ -212,8 +210,6 @@ void AsyncVideoDecoder::setFPS(float fps)
     }
 }
 
-static ProfilingZoneID VDPAUDecodeProfilingZone("AsyncVideoDecoder: VDPAU", true);
-
 FrameAvailableCode AsyncVideoDecoder::getRenderedBmps(vector<BitmapPtr>& pBmps,
         float timeWanted)
 {
@@ -231,22 +227,8 @@ FrameAvailableCode AsyncVideoDecoder::getRenderedBmps(vector<BitmapPtr>& pBmps,
         AVG_ASSERT(pFrameMsg);
         m_LastVideoFrameTime = pFrameMsg->getFrameTime();
         m_CurVideoFrameTime = m_LastVideoFrameTime;
-        if (pFrameMsg->getType() == VideoMsg::VDPAU_FRAME) {
-#ifdef AVG_ENABLE_VDPAU
-            ScopeTimer timer(VDPAUDecodeProfilingZone);
-            vdpau_render_state* pRenderState = pFrameMsg->getRenderState();
-            allocFrameBmps(pBmps);
-            if (pixelFormatIsPlanar(getPixelFormat())) {
-                getPlanesFromVDPAU(pRenderState, pBmps[0], pBmps[1], pBmps[2]);
-            } else {
-                getBitmapFromVDPAU(pRenderState, pBmps[0]);
-            }
-#endif
-        } else {
-            for (unsigned i = 0; i < pBmps.size(); ++i) {
-                pBmps[i] = pFrameMsg->getFrameBitmap(i);
-            }
-//            returnFrame(pFrameMsg);
+        for (unsigned i = 0; i < pBmps.size(); ++i) {
+            pBmps[i] = pFrameMsg->getFrameBitmap(i);
         }
     }
     return frameAvailable;
@@ -352,14 +334,7 @@ VideoMsgPtr AsyncVideoDecoder::getBmpsForTime(float timeWanted,
         float frameTime = -1;
         while (frameTime-timeWanted < -0.5*timePerFrame && !m_bVideoEOF) {
             if (pFrameMsg) {
-                if (pFrameMsg->getType() == VideoMsg::FRAME) {
-                    returnFrame(pFrameMsg);
-                } else {
-#if AVG_ENABLE_VDPAU
-                    vdpau_render_state* pRenderState = pFrameMsg->getRenderState();
-                    unlockVDPAUSurface(pRenderState);
-#endif
-                }
+                returnFrame(pFrameMsg);
             }
             pFrameMsg = getNextBmps(false);
             if (pFrameMsg) {
@@ -386,7 +361,6 @@ VideoMsgPtr AsyncVideoDecoder::getNextBmps(bool bWait)
     if (pMsg) {
         switch (pMsg->getType()) {
             case VideoMsg::FRAME:
-            case VideoMsg::VDPAU_FRAME:
                 return pMsg;
             case VideoMsg::END_OF_FILE:
                 m_NumVSeeksDone = m_NumSeeksSent;
@@ -436,11 +410,6 @@ void AsyncVideoDecoder::handleVSeekMsg(VideoMsgPtr pMsg)
             break;
         case VideoMsg::FRAME:
             returnFrame(dynamic_pointer_cast<VideoMsg>(pMsg));
-            break;
-        case VideoMsg::VDPAU_FRAME:
-#ifdef AVG_ENABLE_VDPAU
-            unlockVDPAUSurface(pMsg->getRenderState());
-#endif            
             break;
         case VideoMsg::END_OF_FILE:
             m_NumVSeeksDone = m_NumSeeksSent;

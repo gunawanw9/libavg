@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -107,8 +107,8 @@ dc1394video_mode_t getCamMode(IntPoint size, PixelFormat pf)
         }
     }
     throw Exception(AVG_ERR_CAMERA_FATAL,
-            "Unsupported or illegal value ("+toString(size.x)+", "+toString(size.y)+
-            "), "+getPixelFormatString(pf)+"\" for camera mode.");
+            "Unsupported or illegal firewire camera mode: (" + 
+            toString(size.x) + ", " + toString(size.y) + "), "+getPixelFormatString(pf));
 }
 
 dc1394framerate_t getFrameRateConst(float frameRate)

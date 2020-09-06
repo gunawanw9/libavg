@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -38,8 +38,7 @@ public:
     virtual ~WGLContext();
 
     void activate();
-
-    bool initVBlank(int rate);
+    void swapBuffers();
 
 private:
     bool queryWGLExtension(const char* extName);

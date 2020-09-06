@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,15 +25,16 @@
 #include "../api.h"
 
 #include "FXNode.h"
-#include "../graphics/GPUHueSatFilter.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/python.hpp>
 #include <string>
 
 using namespace std;
 
 namespace avg {
+
+class GPUHueSatFilter;
+typedef boost::shared_ptr<GPUHueSatFilter> GPUHueSatFilterPtr;
 
 class AVG_API HueSatFXNode : public FXNode {
 public:

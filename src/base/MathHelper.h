@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@
 
 #include "../api.h"
 #include <vector>
-#include <set>
 
 #include <math.h>
 #ifndef M_PI
@@ -33,7 +32,6 @@
 
 namespace avg {
 
-static const float PI = 3.14159265358979323846f;
 static const float EPSILON = 0.00001f;
 
 bool ispow2(int n);

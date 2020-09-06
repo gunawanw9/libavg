@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,21 +24,24 @@
 
 #include "../api.h"
 #include "RasterNode.h"
-#include "Image.h"
+#include "GPUImage.h"
+#include "../graphics/TexInfo.h"
 
-#include "../graphics/Bitmap.h"
 #include "../base/UTF8String.h"
 
 #include <string>
 
 namespace avg {
 
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+
 class AVG_API ImageNode : public RasterNode
 {
     public:
         static void registerType();
         
-        ImageNode(const ArgList& args);
+        ImageNode(const ArgList& args, const std::string& sPublisherName="Node");
         virtual ~ImageNode();
         virtual void connectDisplay();
         virtual void connect(CanvasPtr pCanvas);
@@ -52,20 +55,24 @@ class AVG_API ImageNode : public RasterNode
         
         virtual void preRender(const VertexArrayPtr& pVA, bool bIsParentActive, 
                 float parentEffectiveOpacity);
-        virtual void render();
+        virtual void render(GLContext* pContext, const glm::mat4& transform);
         
-        void getElementsByPos(const glm::vec2& pos, std::vector<NodePtr>& pElements);
+        void getElementsByPos(const glm::vec2& pos, NodeChainPtr& pElements);
+        glm::vec2 toCanvasPos(const glm::vec2& pos);
 
         virtual BitmapPtr getBitmap();
         virtual IntPoint getMediaSize();
+        GPUImage::Source getSource() const;
+
+        virtual std::string dump(int indent = 0);
 
     private:
         bool isCanvasURL(const std::string& sURL);
         void checkCanvasValid(const CanvasPtr& pCanvas);
 
         UTF8String m_href;
-        Image::TextureCompression m_Compression;
-        ImagePtr m_pImage;
+        TexCompression m_Compression;
+        GPUImagePtr m_pGPUImage;
 };
 
 typedef boost::shared_ptr<ImageNode> ImageNodePtr;

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,6 @@
 #include "../api.h"
 #include "ProfilingZoneID.h"
 #include "TimeSource.h"
-
-#include <boost/shared_ptr.hpp>
 
 namespace avg {
 
@@ -61,8 +59,6 @@ private:
     int m_Indent;
     const ProfilingZoneID& m_ZoneID;
 };
-
-typedef boost::shared_ptr<ProfilingZone> ProfilingZonePtr;
 
 }
 

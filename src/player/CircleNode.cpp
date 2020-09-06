@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,11 @@
 #include "CircleNode.h"
 
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 
 #include "../base/Exception.h"
 #include "../base/MathHelper.h"
+#include "../graphics/VertexData.h"
 
 #include <iostream>
 #include <sstream>
@@ -45,10 +47,14 @@ void CircleNode::registerType()
     TypeRegistry::get()->registerType(def);
 }
 
-CircleNode::CircleNode(const ArgList& args)
-    : FilledVectorNode(args)
+CircleNode::CircleNode(const ArgList& args, const string& sPublisherName)
+    : FilledVectorNode(args, sPublisherName)
 {
     args.setMembers(this);
+    if (m_Radius < 0) {
+        throw Exception(AVG_ERR_OUT_OF_RANGE, "Circle radius must not be negative.");
+    }
+    setTranslate(m_Pos);
 }
 
 CircleNode::~CircleNode()
@@ -63,7 +69,7 @@ const glm::vec2& CircleNode::getPos() const
 void CircleNode::setPos(const glm::vec2& pt) 
 {
     m_Pos = pt;
-    setDrawNeeded();
+    setTranslate(m_Pos);
 }
 
 float CircleNode::getR() const 
@@ -73,8 +79,8 @@ float CircleNode::getR() const
 
 void CircleNode::setR(float r) 
 {
-    if (int(r) <= 0) {
-        throw Exception(AVG_ERR_OUT_OF_RANGE, "Circle radius must be a positive number.");
+    if (r < 0) {
+        throw Exception(AVG_ERR_OUT_OF_RANGE, "Circle radius must not be negative.");
     }
     m_Radius = r;
     setDrawNeeded();
@@ -102,19 +108,10 @@ void CircleNode::setTexCoord2(float tc)
     setDrawNeeded();
 }
 
-void CircleNode::getElementsByPos(const glm::vec2& pos, vector<NodePtr>& pElements)
-{
-    if (glm::length(pos-m_Pos) <= m_Radius && reactsToMouseEvents()) {
-        pElements.push_back(getSharedThis());
-    }
-}
-
 void CircleNode::calcVertexes(const VertexDataPtr& pVertexData, Pixel32 color)
 {
-    // TODO: This gets called whenever the circle position changes and is quite 
-    // expensive. Should be optimized away.
-    glm::vec2 firstPt1 = getCirclePt(0, m_Radius+getStrokeWidth()/2)+m_Pos;
-    glm::vec2 firstPt2 = getCirclePt(0, m_Radius-getStrokeWidth()/2)+m_Pos;
+    glm::vec2 firstPt1 = getCirclePt(0, m_Radius+getStrokeWidth()/2);
+    glm::vec2 firstPt2 = getCirclePt(0, m_Radius-getStrokeWidth()/2);
     int curVertex = 0;
     pVertexData->appendPos(firstPt1, glm::vec2(m_TC1, 0), color);
     pVertexData->appendPos(firstPt2, glm::vec2(m_TC1, 1), color);
@@ -184,12 +181,12 @@ void CircleNode::calcVertexes(const VertexDataPtr& pVertexData, Pixel32 color)
 
 void CircleNode::calcFillVertexes(const VertexDataPtr& pVertexData, Pixel32 color)
 {
-    glm::vec2 minPt = m_Pos-glm::vec2(m_Radius, m_Radius);
-    glm::vec2 maxPt = m_Pos+glm::vec2(m_Radius, m_Radius);
-    glm::vec2 centerTexCoord = calcFillTexCoord(m_Pos, minPt, maxPt);
-    pVertexData->appendPos(m_Pos, centerTexCoord, color);
+    glm::vec2 minPt = -glm::vec2(m_Radius, m_Radius);
+    glm::vec2 maxPt = glm::vec2(m_Radius, m_Radius);
+    glm::vec2 centerTexCoord = calcFillTexCoord(glm::vec2(0,0), minPt, maxPt);
+    pVertexData->appendPos(glm::vec2(0,0), centerTexCoord, color);
     int curVertex = 1;
-    glm::vec2 firstPt = getCirclePt(0, m_Radius)+m_Pos;
+    glm::vec2 firstPt = getCirclePt(0, m_Radius);
     glm::vec2 firstTexCoord = calcFillTexCoord(firstPt, minPt, maxPt);
     pVertexData->appendPos(firstPt, firstTexCoord, color);
     vector<glm::vec2> circlePoints;
@@ -198,51 +195,56 @@ void CircleNode::calcFillVertexes(const VertexDataPtr& pVertexData, Pixel32 colo
     for (vector<glm::vec2>::iterator it = circlePoints.begin()+1;
             it != circlePoints.end(); ++it)
     {
-        glm::vec2 curPt = *it+m_Pos;
+        glm::vec2 curPt = *it;
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::reverse_iterator it = circlePoints.rbegin()+1; 
             it != circlePoints.rend(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(-it->y, -it->x)+m_Pos;
+        glm::vec2 curPt = glm::vec2(-it->y, -it->x);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::iterator it = circlePoints.begin()+1;
             it != circlePoints.end(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(-it->y, it->x)+m_Pos;
+        glm::vec2 curPt = glm::vec2(-it->y, it->x);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::reverse_iterator it = circlePoints.rbegin()+1; 
             it != circlePoints.rend(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(it->x, -it->y)+m_Pos;
+        glm::vec2 curPt = glm::vec2(it->x, -it->y);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::iterator it = circlePoints.begin()+1;
             it != circlePoints.end(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(-it->x, -it->y)+m_Pos;
+        glm::vec2 curPt = glm::vec2(-it->x, -it->y);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::reverse_iterator it = circlePoints.rbegin()+1;
             it != circlePoints.rend(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(it->y, it->x)+m_Pos;
+        glm::vec2 curPt = glm::vec2(it->y, it->x);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::iterator it = circlePoints.begin()+1;
             it != circlePoints.end(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(it->y, -it->x)+m_Pos;
+        glm::vec2 curPt = glm::vec2(it->y, -it->x);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
     for (vector<glm::vec2>::reverse_iterator it = circlePoints.rbegin()+1;
             it != circlePoints.rend(); ++it)
     {
-        glm::vec2 curPt = glm::vec2(-it->x, it->y)+m_Pos;
+        glm::vec2 curPt = glm::vec2(-it->x, it->y);
         appendFillCirclePoint(pVertexData, curPt, minPt, maxPt, color, curVertex);
     }
+}
+
+bool CircleNode::isInside(const glm::vec2& pos)
+{
+    return (glm::length(pos-m_Pos) <= m_Radius+getStrokeWidth()/2);
 }
 
 void CircleNode::appendCirclePoint(const VertexDataPtr& pVertexData, 
@@ -252,8 +254,8 @@ void CircleNode::appendCirclePoint(const VertexDataPtr& pVertexData,
     i++;
     float ratio = (float(i)/getNumCircumferencePoints());
     float curTC = (1-ratio)*m_TC1+ratio*m_TC2;
-    pVertexData->appendPos(oPt+m_Pos, glm::vec2(curTC, 0), color);
-    pVertexData->appendPos(iPt+m_Pos, glm::vec2(curTC, 1), color);
+    pVertexData->appendPos(oPt, glm::vec2(curTC, 0), color);
+    pVertexData->appendPos(iPt, glm::vec2(curTC, 1), color);
     pVertexData->appendQuadIndexes(curVertex+1, curVertex, curVertex+3, curVertex+2); 
     curVertex += 2;
 }
@@ -278,7 +280,7 @@ void CircleNode::getEigthCirclePoints(vector<glm::vec2>& pts, float radius)
     int numPts = getNumCircumferencePoints();
     for (int i = 0; i <= numPts/8; ++i) {
         float ratio = (float(i)/numPts);
-        float angle = ratio*2*PI;
+        float angle = ratio*2*float(M_PI);
         pts.push_back(getCirclePt(angle, radius));
     }
 }

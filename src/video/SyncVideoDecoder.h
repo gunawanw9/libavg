@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,18 +24,19 @@
 
 #include "../avgconfigwrapper.h"
 #include "VideoDecoder.h"
-#include "FFMpegDemuxer.h"
-#include "FFMpegFrameDecoder.h"
 
 namespace avg {
+
+class FFMpegDemuxer;
+class FFMpegFrameDecoder;
+typedef boost::shared_ptr<FFMpegFrameDecoder> FFMpegFrameDecoderPtr;
 
 class AVG_API SyncVideoDecoder: public VideoDecoder
 {
     public:
         SyncVideoDecoder();
         virtual ~SyncVideoDecoder();
-        virtual void open(const std::string& sFilename, bool bUseHardwareAcceleration, 
-                bool bEnableSound);
+        virtual void open(const std::string& sFilename, bool bEnableSound);
         virtual void startDecoding(bool bDeliverYCbCr, const AudioParams* pAP);
         virtual void close();
 

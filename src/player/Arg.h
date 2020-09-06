@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -93,25 +93,6 @@ ArgBase* Arg<T>::createCopy() const
 {
     return new Arg<T>(*this);
 }
-
-#ifdef AVG_PLUGIN
-#ifndef _WIN32
-// Under Linux, templates used by plugins need to be instantiated explicitly if
-// RTTI is needed. Templates instantiated implicitly get instantiated again in the
-// plugin with a different typeid. 
-extern template class Arg<int>;
-extern template class Arg<bool>;
-extern template class Arg<float>;
-extern template class Arg<std::string>;
-extern template class Arg<glm::vec2>;
-extern template class Arg<glm::vec3>;
-extern template class Arg<glm::ivec3>;
-extern template class Arg<std::vector<float> >;
-extern template class Arg<std::vector<int> >;
-extern template class Arg<std::vector<glm::vec2> >;
-extern template class Arg<std::vector<glm::ivec2> >;
-#endif
-#endif
 
 }
 

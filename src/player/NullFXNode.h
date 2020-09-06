@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,11 +25,13 @@
 #include "../api.h"
 
 #include "FXNode.h"
-#include "../graphics/GPUNullFilter.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace avg {
+
+class GPUNullFilter;
+typedef boost::shared_ptr<GPUNullFilter> GPUNullFilterPtr;
 
 class AVG_API NullFXNode: public FXNode {
 public:

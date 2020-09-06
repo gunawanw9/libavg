@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2011 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,8 @@
 
 #include <map>
 
+struct SDL_SysWMinfo;
+
 namespace avg {
 
 class GLTexture;
@@ -46,7 +48,7 @@ class AVG_API GLContextManager
 {
 public:
     static GLContextManager* get();
-    static bool exists();
+    static bool isActive();
 
     GLContextManager();
     virtual ~GLContextManager();
@@ -55,14 +57,13 @@ public:
             const IntPoint& windowSize=IntPoint(0,0), const SDL_SysWMinfo* pSDLWMInfo=0);
     void registerContext(GLContext* pContext);
     void unregisterContext(GLContext* pContext);
+    int getContextIndex(GLContext* pContext);
 
     MCTexturePtr createTexture(const IntPoint& size, PixelFormat pf, bool bMipmap=false,
-            unsigned wrapSMode=GL_CLAMP_TO_EDGE, unsigned wrapTMode=GL_CLAMP_TO_EDGE,
             bool bForcePOT=false, int potBorderColor=0);
     MCFBOPtr createFBO(const IntPoint& size, PixelFormat pf, unsigned numTextures=1, 
             unsigned multisampleSamples=1, bool bUsePackedDepthStencil=false,
-            bool bUseStencil=false, bool bMipmap=false,
-            unsigned wrapSMode=GL_CLAMP_TO_EDGE, unsigned wrapTMode=GL_CLAMP_TO_EDGE);
+            bool bUseStencil=false, bool bMipmap=false);
     void createShader(const std::string& sID);
     template<class VAL_TYPE>
     boost::shared_ptr<MCShaderParamTemplate<VAL_TYPE> > createShaderParam(
@@ -76,7 +77,6 @@ public:
 
     void scheduleTexUpload(MCTexturePtr pTex, BitmapPtr pBmp);
     MCTexturePtr createTextureFromBmp(BitmapPtr pBmp, bool bMipmap=false, 
-            unsigned wrapSMode=GL_CLAMP_TO_EDGE, unsigned wrapTMode=GL_CLAMP_TO_EDGE,
             bool bForcePOT=false, int potBorderColor=0);
     void deleteTexture(unsigned texID);
 

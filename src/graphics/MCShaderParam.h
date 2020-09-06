@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -37,9 +37,6 @@
 
 namespace avg {
 
-class OGLShader;
-typedef boost::shared_ptr<OGLShader> OGLShaderPtr;
-
 class AVG_API MCShaderParam
 {
 public:
@@ -73,9 +70,9 @@ public:
         m_pParams[pContext] = pShader->getParam<VAL_TYPE>(m_sParamName);
     };
 
-    void set(const VAL_TYPE& val)
+    void set(GLContext* pContext, const VAL_TYPE& val)
     {
-        typename PARAM_MAP::iterator it = m_pParams.find(GLContext::getCurrent());
+        typename PARAM_MAP::iterator it = m_pParams.find(pContext);
         AVG_ASSERT(it != m_pParams.end());
         GL_SHADER_PARAM_TYPE_PTR pParam = it->second;
         pParam->set(val);

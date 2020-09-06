@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -21,16 +21,13 @@
 
 #include "Test.h"
 
-#include "../base/OSHelper.h"
-
-#include <iostream>
-#include <stdlib.h>
+#include "Exception.h"
 
 using namespace std;
 
 namespace avg {
 
-string Test::s_sSrcDirName;
+string Test::s_sRelSrcDir;
 
 Test::Test(const string & sName, int indentLevel)
     : m_IndentLevel(indentLevel),
@@ -97,17 +94,29 @@ void Test::printResults()
     }
         
 }
-
-const string& Test::getSrcDirName()
+    
+void Test::setRelSrcDir(const string& sRelSrcDir)
 {
-    if (s_sSrcDirName == "") {
-        bool bInEnviron = getEnv("srcdir", s_sSrcDirName);
-        if (!bInEnviron) {
-            s_sSrcDirName = ".";
-        }
-        s_sSrcDirName += "/";
-    }
-    return s_sSrcDirName;
+    s_sRelSrcDir = sRelSrcDir;
+}
+
+string Test::getSrcDir()
+{
+    return s_sRelSrcDir.empty() ? "." : s_sRelSrcDir;
+}
+
+string Test::getMediaDir() const
+{
+#ifdef WIN32
+   return getSrcDir() + "/../test/media";
+#else
+   return getSrcDir() + "/../media";
+#endif
+}
+
+string Test::getBaselineDir() const
+{
+    return getSrcDir() + "/baseline";
 }
 
 }

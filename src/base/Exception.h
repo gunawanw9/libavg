@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,13 @@
 #define AVG_ERR_MT_INIT 33
 
 namespace avg {
- 
+
+#ifdef _WIN32
+    #pragma warning(push)
+    // Disable "non dll-interface class 'std::exception' used as base for dll-interface class" warning
+    #pragma warning(disable : 4275)
+#endif
+
 class AVG_API Exception: public std::exception
 {
     public:
@@ -75,6 +81,10 @@ class AVG_API Exception: public std::exception
         int m_Code;
         std::string m_sErr;
 };
+
+#ifdef _WIN32
+    #pragma warning(pop)
+#endif
 
 void AVG_API debugBreak();
 void AVG_API avgAssert(bool b, const char * pszFile, int line, const char * pszReason=0);

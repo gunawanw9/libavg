@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,12 @@ ExportedObjectPtr ExportedObject::getSharedThis()
     // a pointer to the python object in m_pSelf and use that to create a functioning
     // and complete ExportedObjectPtr if there is a python derived class.
     if (m_pSelf) {
-        return py::extract<ExportedObjectPtr>(m_pSelf);
+        ExportedObjectPtr pConvertedSelf = py::extract<ExportedObjectPtr>(m_pSelf);
+        if (&*pConvertedSelf != this) {
+            throw Exception(AVG_ERR_INVALID_ARGS,
+                    "registerInstance called with nodes that don't match.");
+        }
+        return pConvertedSelf;
     } else {
         return shared_from_this();
     }

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,7 @@ public:
     static void createResultImgDir();
 
 protected:
+    std::string getTestBmpName(const std::string& sFName);
     BitmapPtr loadTestBmp(const std::string& sFName, PixelFormat pf = NO_PIXELFORMAT);
     virtual void testEqual(Bitmap& resultBmp, const std::string& sFName, 
             PixelFormat pf = NO_PIXELFORMAT, float maxAverage=0.01f, 

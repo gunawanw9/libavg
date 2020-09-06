@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,9 @@
 #include "../base/WorkerThread.h"
 #include "../base/Command.h"
 #include "../base/Queue.h"
+#include "../base/GLMHelper.h"
+
+#include "../graphics/PixelFormat.h"
 
 #include "WrapFFMpeg.h"
 
@@ -44,7 +47,7 @@ typedef boost::shared_ptr<FFMpegFrameDecoder> FFMpegFrameDecoderPtr;
 class AVG_API VideoDecoderThread: public WorkerThread<VideoDecoderThread> {
     public:
         VideoDecoderThread(CQueue& cmdQ, VideoMsgQueue& msgQ, VideoMsgQueue& packetQ, 
-                AVStream* pStream, const IntPoint& size, PixelFormat pf, bool bUseVDPAU);
+                AVStream* pStream, const IntPoint& size, PixelFormat pf);
         virtual ~VideoDecoderThread();
         virtual bool init();
         virtual void deinit();
@@ -71,7 +74,6 @@ class AVG_API VideoDecoderThread: public WorkerThread<VideoDecoderThread> {
         
         IntPoint m_Size;
         PixelFormat m_PF;
-        bool m_bUseVDPAU;
 
         bool m_bSeekDone;
         bool m_bProcessingLastFrames;

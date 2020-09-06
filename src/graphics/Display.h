@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <SDL2/SDL.h>
+
 namespace avg {
 
 class Display;
@@ -53,15 +55,14 @@ protected:
     Display();
     
     virtual float queryPPMM()=0;
-    virtual IntPoint queryScreenResolution();
-    virtual float queryRefreshRate()=0;
+    virtual void queryScreenResolution();
 
 private:
-    IntPoint m_ScreenResolution;
+    SDL_DisplayMode m_DisplayMode;
     float m_PPMM;
     bool m_bAutoPPMM; // true if assumePixelsPerMM hasn't been called.
 
-    float m_RefreshRate;
+    int m_RefreshRate;
 
     static DisplayPtr s_pInstance;
 };

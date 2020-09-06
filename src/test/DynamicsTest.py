@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,7 +21,7 @@
 #
 
 from libavg import avg, player
-from testcase import *
+from libavg.testcase import *
 
 class DynamicsTestCase(AVGTestCase):
     def __init__(self, testFuncName):
@@ -40,15 +40,16 @@ class DynamicsTestCase(AVGTestCase):
             node.x = 10
             node.y = 20
             self.root.appendChild(node)
-            self.assertRaises(RuntimeError, setNodeID)
+            self.assertRaises(avg.Exception, setNodeID)
             self.assertEqual(self.root.indexOf(player.getElementByID("nodeid1")), 0)
-            self.assertRaises(RuntimeError, lambda: self.root.indexOf(self.root))
+            self.assertRaises(avg.Exception, lambda: self.root.indexOf(self.root))
 
         def createNode2(useXml):
             node = createFunc(useXml)
             node.id = "nodeid2"
             oldNode = player.getElementByID("nodeid1")
             self.root.insertChildBefore(node, oldNode)
+            self.assertEqual(self.root.getChild(1), oldNode)
 
         def reorderNode():
             self.root.reorderChild(0, 1)
@@ -58,19 +59,33 @@ class DynamicsTestCase(AVGTestCase):
         def removeNodes():
             self.node = player.getElementByID("nodeid1")
             self.root.removeChild(self.root.indexOf(self.node))
-            node2 = player.getElementByID("nodeid2")
-            self.root.removeChild(node2)
+            self.node2 = player.getElementByID("nodeid2")
+            self.root.removeChild(self.node2)
             self.assertEqual(player.getElementByID("nodeid1"), None)
         
         def reAddNode():
             self.root.appendChild(self.node)
             if isVideo:
                 self.node.play()
+
+        def reAddNode2():
+            self.root.insertChildAfter(self.node2, self.node)
+            if isVideo:
+                self.node2.play()
+            self.assertEqual(self.root.getChild(1), self.node2)
             self.node = None
+            self.node2 = None
+
        
         def killNode():
+            def onKill():
+                self.killCalled = True
+
             self.node = player.getElementByID("nodeid1")
+            self.killCalled = False
+            self.node.subscribe(avg.Node.KILLED, onKill)
             self.node.unlink(True)
+            self.assert_(self.killCalled)
             gone = player.getElementByID("nodeid1")
             self.assertEqual(gone, None)
 
@@ -99,6 +114,7 @@ class DynamicsTestCase(AVGTestCase):
                      lambda: self.compareImage(testName+"5"),
                      killNode,
                      reAddNode,
+                     reAddNode2,
                      removeAgain
                     ))
         
@@ -135,6 +151,7 @@ class DynamicsTestCase(AVGTestCase):
             else:
                 node = player.createNode("words", {"text":"test"})
             node.font="Bitstream Vera Sans"
+            node.variant="Roman"
             node.fontsize=12
             node.width=200
             return node
@@ -159,10 +176,10 @@ class DynamicsTestCase(AVGTestCase):
     def testDuplicateID(self):
         root = self.loadEmptyScene()
         avg.ImageNode(href="rgb24-64x64.png", id="testdup", parent=root)
-        self.assertRaises(RuntimeError, lambda: avg.ImageNode(href="rgb24-64x64.png", 
+        self.assertRaises(avg.Exception, lambda: avg.ImageNode(href="rgb24-64x64.png", 
                 id="testdup", parent=root))
         self.start(False,
-                (self.assertRaises(RuntimeError,
+                (self.assertRaises(avg.Exception,
                         lambda: avg.ImageNode(href="rgb24-64x64.png", id="testdup",
                         parent=root)),
                 ))
@@ -174,8 +191,8 @@ class DynamicsTestCase(AVGTestCase):
             root.appendChild(img)
 
         root = self.loadEmptyScene()
-        self.assertRaises(RuntimeError, changeParent)
-        self.start(False, (self.assertRaises(RuntimeError, changeParent),))
+        self.assertRaises(avg.Exception, changeParent)
+        self.start(False, (self.assertRaises(avg.Exception, changeParent),))
 
     def testDynamicEventCapture(self):
         # Tests if deleting a node that has events captured works.
@@ -269,7 +286,7 @@ class DynamicsTestCase(AVGTestCase):
             node.appendChild(imgNode)
             imgNode.id = "imageid"
             root.appendChild(node)
-            self.assertRaises(RuntimeError, lambda: setImageID(imgNode))
+            self.assertRaises(avg.Exception, lambda: setImageID(imgNode))
   
         def removeDiv():
             node = player.getElementByID("divid")
@@ -279,7 +296,7 @@ class DynamicsTestCase(AVGTestCase):
             imgNode.unlink()
             root.appendChild(node)
             node.appendChild(imgNode)
-            self.assertRaises(RuntimeError, lambda: setImageID(imgNode))
+            self.assertRaises(avg.Exception, lambda: setImageID(imgNode))
 
         root = self.loadEmptyScene()
         createDiv()
@@ -343,9 +360,20 @@ class DynamicsTestCase(AVGTestCase):
             retrievedImage = root.getChild(0)
             self.assertEqual(type(retrievedImage), CustomImageNode)
 
+        def testRegisterInstanceException():
+
+            class BrokenCustomNode(avg.ImageNode):
+                def __init__(self, p, parent=None, **kwargs):
+                    avg.ImageNode.__init__(self, pos=p, href="rgb24-64x64.png", **kwargs)
+                    self.registerInstance(parent, parent)
+
+            self.assertRaises(avg.Exception, lambda: BrokenCustomNode((23,42),
+                    parent=root))
+
         root = self.loadEmptyScene()
         testNodePythonAttribute()
         testNodePythonSubclass()
+        testRegisterInstanceException()
 
     def testDynamicMediaDir(self):
         def attachNode():

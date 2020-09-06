@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,6 @@
 
 #include "GLMHelper.h"
 #include "StringHelper.h"
-#include "../glm/glm.hpp"
-
-#include <algorithm>
 
 namespace avg {
 
@@ -46,7 +43,8 @@ public:
     Rect();
     Rect(NUM left, NUM top, NUM right, NUM bottom);
     Rect(const Vec2& TL, const Vec2& BR);
-    template<typename ORIGNUM, glm::precision origPrecision> Rect(const Rect<ORIGNUM, origPrecision>& rc);
+    template<typename ORIGNUM, glm::precision origPrecision>
+            Rect(const Rect<ORIGNUM, origPrecision>& rc);
 
     bool operator ==(const Rect<NUM, precision>& rect) const;
     bool operator !=(const Rect<NUM, precision>& rect) const;
@@ -60,6 +58,7 @@ public:
     bool contains(const Rect<NUM, precision>& rect) const;
     bool intersects(const Rect<NUM, precision>& rect) const;
     void expand(const Rect<NUM, precision>& rect);
+    void expand(const Vec2& pt);
     void intersect(const Rect<NUM, precision>& rect);
     Vec2 size() const;
     Vec2 cropPoint(const Vec2& pt) const;
@@ -195,20 +194,29 @@ void Rect<NUM, precision>::expand(const Rect<NUM, precision>& rect)
     if (width() == 0 && height() == 0) {
         *this = rect;
     } else {
-        tl.x = glm::min(tl.x, rect.tl.x);
-        tl.y = glm::min(tl.y, rect.tl.y);
-        br.x = glm::max(br.x, rect.br.x);
-        br.y = glm::max(br.y, rect.br.y);
+        tl.x = std::min(tl.x, rect.tl.x);
+        tl.y = std::min(tl.y, rect.tl.y);
+        br.x = std::max(br.x, rect.br.x);
+        br.y = std::max(br.y, rect.br.y);
     }
+}
+
+template<typename NUM, glm::precision precision>
+void Rect<NUM, precision>::expand(const Vec2& pt)
+{
+    tl.x = std::min(tl.x, pt.x);
+    tl.y = std::min(tl.y, pt.y);
+    br.x = std::max(br.x, pt.x);
+    br.y = std::max(br.y, pt.y);
 }
 
 template<typename NUM, glm::precision precision>
 void Rect<NUM, precision>::intersect(const Rect<NUM, precision>& rect)
 {
-    tl.x = glm::max(tl.x, rect.tl.x);
-    tl.y = glm::max(tl.y, rect.tl.y);
-    br.x = glm::min(br.x, rect.br.x);
-    br.y = glm::min(br.y, rect.br.y);
+    tl.x = std::max(tl.x, rect.tl.x);
+    tl.y = std::max(tl.y, rect.tl.y);
+    br.x = std::min(br.x, rect.br.x);
+    br.y = std::min(br.y, rect.br.y);
 }
 
 template<typename NUM, glm::precision precision>

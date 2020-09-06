@@ -88,7 +88,7 @@ The namespace libavg.gesture exposes a group of configurable gesture recognizers
             .. py:method:: Recognizer.MOTION(offset)
 
                 Emitted when the drag should cause a position change. This usually happens
-                in response to a :py:const:`CURSORMOTION` event, but may also happen
+                in response to a :py:const:`CURSOR_MOTION` event, but may also happen
                 because of inertia.
 
                 :param avg.Point2D offset: 
@@ -111,10 +111,10 @@ The namespace libavg.gesture exposes a group of configurable gesture recognizers
             Aborts the present recognized gesture and sliding caused by inertia
 
 
-    .. autoclass:: HoldRecognizer(node, [delay=HOLD_DELAY, maxDist=MAX_TAP_DIST, initialEvent=None, possibleHandler=None, failHandler=None, detectedHandler=None, stopHandler=None])
+    .. autoclass:: HoldRecognizer(node, [delay=HOLD_DELAY, maxDist=MAX_TAP_DIST, initialEvent=None, possibleHandler=None, failHandler=None, detectedHandler=None, endHandler=None])
 
         A :py:class:`HoldRecognizer` detects if a touch is held for a certain amount of 
-        time. Holds are continuous events: the :py:meth:`stopHandler` is called when the
+        time. Holds are continuous events: the :py:meth:`endHandler` is called when the
         contact up event arrives.
 
         :param delay: The amount of time that has to pass before the hold is recognized.
@@ -136,6 +136,9 @@ The namespace libavg.gesture exposes a group of configurable gesture recognizers
         :samp:`src/samples/gestures.py`. Many of the recognizers have default timeouts 
         and distance limits which can be changed by modifying :file:`avgrc`. The sample
         file under :file:`src/avgrc` contains explanations.
+
+        Gesture Recognizers disable themselves automatically if the node they are attached
+        to is deleted using :samp:`unlink(True)`.
 
         :param Node node: Node to attach to.
 
@@ -325,7 +328,7 @@ The namespace libavg.gesture exposes a group of configurable gesture recognizers
             .. py:method:: Recognizer.MOTION(transform)
 
                 Emitted whenever the transform changes. This usually happens
-                in response to one or more :py:const:`CURSORMOTION` events, but may also
+                in response to one or more :py:const:`CURSOR_MOTION` events, but may also
                 happen because of inertia.
 
                 :param Transform transform:

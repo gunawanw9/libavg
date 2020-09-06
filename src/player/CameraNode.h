@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ class AVG_API CameraNode : public RasterNode
     public:
         static void registerType();
         
-        CameraNode(const ArgList& args);
+        CameraNode(const ArgList& args, const std::string& sPublisherName="Node");
         virtual ~CameraNode();
 
         virtual void connectDisplay();
@@ -99,7 +99,7 @@ class AVG_API CameraNode : public RasterNode
 
         virtual void preRender(const VertexArrayPtr& pVA, bool bIsParentActive, 
                 float parentEffectiveOpacity);
-        virtual void render();
+        virtual void render(GLContext* pContext, const glm::mat4& transform);
 
         int getFrameNum() const;
         IntPoint getMediaSize();

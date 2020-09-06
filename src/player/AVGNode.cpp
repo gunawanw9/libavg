@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include "Player.h"
 
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 #include "KeyEvent.h"
 
 #include "../base/FileHelper.h"
@@ -40,8 +41,8 @@ void AVGNode::registerType()
     TypeRegistry::get()->registerType(def);
 }
 
-AVGNode::AVGNode(const ArgList& args)
-    : CanvasNode(args)
+AVGNode::AVGNode(const ArgList& args, const string& sPublisherName)
+    : CanvasNode(args, sPublisherName)
 {
     args.setMembers(this);
 }

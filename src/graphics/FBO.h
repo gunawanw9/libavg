@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,7 @@
 #include "../api.h"
 
 #include "FBOInfo.h"
-#include "GLTexture.h"
-#ifndef AVG_ENABLE_EGL
-    #include "PBO.h"
-#endif
+#include "OGLHelper.h"
 
 #include "../base/GLMHelper.h"
 
@@ -37,6 +34,16 @@
 #include <vector>
 
 namespace avg {
+
+class GLTexture;
+typedef boost::shared_ptr<GLTexture> GLTexturePtr;
+class Bitmap;
+typedef boost::shared_ptr<Bitmap> BitmapPtr;
+#ifndef AVG_ENABLE_EGL
+class PBO;
+typedef boost::shared_ptr<PBO> PBOPtr;
+#endif
+
 
 class AVG_API FBO: public FBOInfo
 {
@@ -60,7 +67,7 @@ private:
 #ifndef AVG_ENABLE_EGL
     PBOPtr m_pOutputPBO;
 #endif
-    unsigned m_FBO;
+    GLuint m_FBO;
     std::vector<GLTexturePtr> m_pTextures;
     unsigned m_StencilBuffer;
 

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -38,14 +38,15 @@ public:
     virtual ~GPUBlurFilter();
     
     void setStdDev(float stdDev);
-    virtual void applyOnGPU(GLTexturePtr pSrcTex);
+    virtual void applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex);
 
 private:
-    void setDimensions(IntPoint size, float stdDev, bool bClipBorders);
+    void setDimensions(IntPoint size, float stdDev);
 
     float m_StdDev;
     bool m_bClipBorders;
     bool m_bUseFloatKernel;
+    WrapMode m_WrapMode;
 
     MCTexturePtr m_pGaussCurveTex;
     ImagingProjectionPtr m_pProjection2;

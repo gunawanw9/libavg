@@ -1,6 +1,6 @@
 
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2011 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,7 @@ struct AVG_API WindowParams {
     IntRect m_Viewport;
     int m_DisplayServer;
     bool m_bHasWindowFrame;
+    std::string m_sTitle;
 };
 
 }

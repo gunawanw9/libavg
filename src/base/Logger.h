@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ typedef boost::unordered_map< const category_t, const severity_t > CatToSeverity
 
 #ifdef _WIN32
 // non dll-interface class used as base for dll-interface class
-#pragma warning(disable:4275) 
+#pragma warning(disable:4275)
 #endif
 class AVG_API Logger: private boost::noncopyable {
 public:
@@ -73,6 +73,7 @@ public:
         static const category_t PLAYER;
         static const category_t SHADER;
         static const category_t DEPRECATION;
+        static const category_t VIDEO;
     };
 
     static Logger* get();
@@ -109,7 +110,7 @@ public:
         try {
             severity_t targetSeverity = m_CategorySeverities.at(category);
             return (targetSeverity <= severity);
-        } catch (out_of_range e){
+        } catch (const out_of_range& e){
             string msg("Unknown category: " + category);
             throw Exception(AVG_ERR_INVALID_ARGS, msg);
         }

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,6 @@
 #define _GLShaderParam_H_
 
 #include "../api.h"
-#include "OGLHelper.h"
 #include "Pixel32.h"
 #include "GLContext.h"
 
@@ -41,6 +40,8 @@ class OGLShader;
 class AVG_API GLShaderParam
 {
 public:
+    GLShaderParam();
+
     GLShaderParam(OGLShader* pShader, const std::string& sName);
     virtual ~GLShaderParam() {};
     
@@ -59,6 +60,9 @@ template<class VAL_TYPE>
 class AVG_TEMPLATE_API GLShaderParamTemplate: public GLShaderParam
 {
 public:
+    GLShaderParamTemplate()
+    {};
+
     GLShaderParamTemplate(OGLShader* pShader, const std::string& sName)
         : GLShaderParam(pShader, sName),
           m_bValSet(false)
@@ -78,7 +82,7 @@ private:
     void uniformSet(unsigned location, const VAL_TYPE& val) 
     {
         AVG_ASSERT_MSG(false, 
-                getName()+"GLShaderParam::uniformSet() called for unsupported type.");
+                (getName()+"GLShaderParam::uniformSet() called for unsupported type.").c_str());
     };
 
     bool m_bValSet;

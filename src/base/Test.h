@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include <iostream>
-#include <sstream>
 #include <string>
 
 namespace avg {
@@ -50,8 +49,13 @@ public:
     virtual void printResults();
 
 protected:
-    static const std::string& getSrcDirName();
-    static std::string s_sSrcDirName;
+    static void setRelSrcDir(const std::string& sRelDir);
+    static std::string getSrcDir();
+
+    std::string getMediaDir() const;
+    std::string getBaselineDir() const;
+
+    static std::string s_sRelSrcDir;
 
     int m_IndentLevel;
 
@@ -71,8 +75,20 @@ typedef boost::shared_ptr<Test> TestPtr;
     cerr << string(m_IndentLevel+4, ' ') << "  TEST(" << #b << ")" << endl;  \
     test(b, __FILE__, __LINE__);
 
+#define TEST_EXCEPTION(expr, ExceptionType)\
+    cerr << string(m_IndentLevel+4, ' ') << "  TEST_EXCEPTION(" << #expr << ")" << endl; \
+    {                                      \
+        bool bOK = false;                  \
+        try {                              \
+            expr;                          \
+        } catch (const ExceptionType&) {   \
+            bOK = true;                    \
+        }                                  \
+        test(bOK, __FILE__, __LINE__);       \
+    }
+
 #define QUIET_TEST(b)                      \
-    if(!(b)) {                               \
+    if(!(b)) {                             \
         cerr << string(m_IndentLevel+4, ' ') << "  TEST(" << #b << ")" << endl;  \
     }                                      \
     test(b, __FILE__, __LINE__);

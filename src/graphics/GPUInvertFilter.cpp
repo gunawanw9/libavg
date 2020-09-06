@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -47,11 +47,11 @@ GPUInvertFilter::~GPUInvertFilter()
     ObjectCounter::get()->decRef(&typeid(*this));
 }
 
-void GPUInvertFilter::applyOnGPU(GLTexturePtr pSrcTex)
+void GPUInvertFilter::applyOnGPU(GLContext* pContext, GLTexturePtr pSrcTex)
 {
     getShader()->activate();
-    m_pTextureParam->set(0);
-    draw(pSrcTex);
+    m_pTextureParam->set(pContext, 0);
+    draw(pContext, pSrcTex, WrapMode());
 }
 
 }

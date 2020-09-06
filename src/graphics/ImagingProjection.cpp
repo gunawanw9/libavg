@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 #include "GLContext.h"
 #include "GLContextManager.h"
 #include "OGLShader.h"
+#include "VertexArray.h"
 
 #include "../base/Exception.h"
 
@@ -63,12 +64,12 @@ void ImagingProjection::setColor(const Pixel32& color)
     }
 }
 
-void ImagingProjection::draw(const OGLShaderPtr& pShader)
+void ImagingProjection::draw(GLContext* pContext, const OGLShaderPtr& pShader)
 {
     IntPoint destSize = m_DestRect.size();
     glViewport(0, 0, destSize.x, destSize.y);
     pShader->setTransform(m_ProjMat); 
-    m_pVA->draw();
+    m_pVA->draw(pContext);
 }
 
 void ImagingProjection::init(IntPoint srcSize, IntRect destRect)

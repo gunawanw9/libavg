@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ TimeSource * TimeSource::get()
         UINT wTimerRes;
         MMRESULT err = timeGetDevCaps(&tc, sizeof(TIMECAPS));
         AVG_ASSERT(err == TIMERR_NOERROR);
-        wTimerRes = max(tc.wPeriodMin, 1);
+        wTimerRes = max(int(tc.wPeriodMin), 1);
         timeBeginPeriod(wTimerRes);
 #endif
         m_pTimeSource = new TimeSource;

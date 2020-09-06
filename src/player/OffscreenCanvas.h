@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,9 +24,6 @@
 
 #include "../api.h"
 #include "Canvas.h"
-#include "OffscreenCanvasNode.h"
-
-#include "CameraNode.h"
 
 #include <string>
 
@@ -37,6 +34,9 @@ class FBO;
 typedef boost::shared_ptr<FBO> FBOPtr;
 class MCFBO;
 typedef boost::shared_ptr<MCFBO> MCFBOPtr;
+class MCTexture;
+typedef boost::shared_ptr<MCTexture> MCTexturePtr;
+class CameraNode;
 
 class AVG_API OffscreenCanvas: public Canvas
 {
@@ -50,7 +50,6 @@ class AVG_API OffscreenCanvas: public Canvas
         virtual BitmapPtr screenshot() const;
         virtual BitmapPtr screenshotIgnoreAlpha() const;
         bool getHandleEvents() const;
-        int getMultiSampleSamples() const;
         bool getMipmap() const;
         bool getAutoRender() const;
         void setAutoRender(bool bAutoRender);
@@ -59,7 +58,7 @@ class AVG_API OffscreenCanvas: public Canvas
         std::string getID() const;
         bool isRunning() const;
         MCTexturePtr getTex() const;
-        FBOPtr getFBO();
+        FBOPtr getFBO(GLContext* pContext);
 
         void registerCameraNode(CameraNode* pCameraNode);
         void unregisterCameraNode();

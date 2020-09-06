@@ -119,6 +119,10 @@ This section describes the base classes for all node classes that libavg provide
             
                 Emitted whenever a mouse or a touch leaves the :py:class:`Node`'s area.
 
+            .. py:method:: MOUSE_WHEEL(mousewheelevent)
+            
+                Emitted whenever a mouse wheel is moved.
+
             .. py:method:: HOVER_DOWN(cursorevent)
             
                 Emitted whenever a new hover cursor is registered.
@@ -139,6 +143,65 @@ This section describes the base classes for all node classes that libavg provide
             
                 Emitted whenever a hover cursor leaves the :py:class:`Node`'s area.
 
+            .. py:method:: TANGIBLE_DOWN(cursorevent)
+            
+                Emitted whenever a tangible is placed on the surface.
+
+            .. py:method:: TANGIBLE_MOTION(cursorevent)
+            
+                Emitted whenever a tangible is moved.
+
+            .. py:method:: TANGIBLE_UP(cursorevent)
+            
+                Emitted whenever a tangible leaves the surface.
+
+            .. py:method:: TANGIBLE_OVER(cursorevent)
+            
+                Emitted whenever a tangible enters the :py:class:`Node`'s area.
+
+            .. py:method:: TANGIBLE_OUT(cursorevent)
+            
+                Emitted whenever a tangible leaves the :py:class:`Node`'s area.
+
+            .. py:method:: PEN_DOWN(cursorevent)
+            
+                Emitted whenever a pen is placed on the surface.
+
+            .. py:method:: PEN_MOTION(cursorevent)
+            
+                Emitted whenever a pen is moved.
+
+            .. py:method:: PEN_UP(cursorevent)
+            
+                Emitted whenever a pen leaves the surface.
+
+            .. py:method:: PEN_OVER(cursorevent)
+            
+                Emitted whenever a pen enters the :py:class:`Node`'s area.
+
+            .. py:method:: PEN_OUT(cursorevent)
+            
+                Emitted whenever a pen leaves the :py:class:`Node`'s area.
+
+            .. py:method:: KILLED()
+
+                Emitted when the node or one of its parents has :samp:`unlink(True)`
+                called.
+
+            .. py:method:: SIZE_CHANGED(newSize)
+            
+                Emitted whenever the size of the node changes. This includes any python
+                calls that change the size. In addition, image loading (for 
+                :py:class:`ImageNode`), opening of video files (for 
+                :py:class:`VideoNode`) and changes in the text displayed (in the case of
+                :py:class:`WordsNode`) can trigger :py:meth:`SIZE_CHANGED` messages. Note
+                that changing the size of a node inside a :py:meth:`SIZE_CHANGED` handler
+                will lead to an additional recursive invocation of 
+                :py:meth:`SIZE_CHANGED`.
+                
+                :py:class:`RectNode` and all classes derived from :py:class:`AreaNode`
+                support this message.
+
             .. py:method:: TANGIBLE_DOWN(tangibleevent)
             
                 Emitted whenever a new tangible cursor is registered.
@@ -158,20 +221,6 @@ This section describes the base classes for all node classes that libavg provide
             .. py:method:: TANGIBLE_OUT(tangibleevent)
             
                 Emitted whenever a tangible cursor leaves the :py:class:`Node`'s area.
-
-            .. py:method:: SIZE_CHANGED(newSize)
-            
-                Emitted whenever the size of the node changes. This includes any python
-                calls that change the size. In addition, image loading (for 
-                :py:class:`ImageNode`), opening of video files (for 
-                :py:class:`VideoNode`) and changes in the text displayed (in the case of
-                :py:class:`WordsNode`) can trigger :py:meth:`SIZE_CHANGED` messages. Note
-                that changing the size of a node inside a :py:meth:`SIZE_CHANGED` handler
-                will lead to an additional recursive invocation of 
-                :py:meth:`SIZE_CHANGED`.
-                
-                :py:class:`RectNode` and all classes derived from :py:class:`AreaNode`
-                support this message.
 
 
         .. py:attribute:: id
@@ -212,10 +261,11 @@ This section describes the base classes for all node classes that libavg provide
             :py:meth:`connectEventHandler`, call :py:meth:`disconnectEventHandler`.
 
             :param type:
-            
-                One of the event types :py:const:`KEYUP`, :py:const:`KEYDOWN`, 
-                :py:const:`CURSORMOTION`, :py:const:`CURSORUP`, :py:const:`CURSORDOWN`, 
-                :py:const:`CURSOROVER` or :py:const:`CURSOROUT`.
+
+                One of the event types :py:const:`Event.KEY_UP`, :py:const:`Event.KEY_DOWN`,
+                :py:const:`Event.CURSOR_MOTION`, :py:const:`Event.CURSOR_UP`,
+                :py:const:`Event.CURSOR_DOWN`, :py:const:`Event.CURSOR_OVER` or
+                :py:const:`Event.CURSOR_OUT`.
 
             :param source:
 
@@ -259,7 +309,8 @@ This section describes the base classes for all node classes that libavg provide
         .. py:method:: getAbsPos(relpos) -> Point2D
 
             Transforms a position in coordinates relative to the node to a
-            position in window coordinates.
+            position in window (or canvas, if the node is in an
+            :py:class:`OffscreenCanvas`) coordinates.
 
         .. py:method:: getElementByPos(pos) -> Node
 
@@ -278,13 +329,16 @@ This section describes the base classes for all node classes that libavg provide
 
         .. py:method:: getRelPos(abspos) -> Point2D
 
-            Transforms a position in window coordinates to a position
-            in coordinates relative to the node.
+            Transforms a position in absolute coordinates to a position
+            in coordinates relative to the node. More precisely, absolute coordinates
+            are in canvas coordinates. Thus, for nodes in the main canvas,
+            :py:attr:`abspos` is a window coordinate.
 
         .. py:method:: registerInstance(self, parent)
 
             Needs to be called when deriving from a Node class in python in the derived
-            classes :py:meth:`__init__` method.
+            classes :py:meth:`__init__` method (and *only* there, see `Programmer's
+            Guide <https://www.libavg.de/site/projects/libavg/wiki/Subclassing>`_).
 
         .. py:method:: releaseEventCapture([cursorid])
 
@@ -314,10 +368,11 @@ This section describes the base classes for all node classes that libavg provide
             other event handlers from this type/source-combination. 
 
             :param type:
-            
-                One of the event types :py:const:`KEYUP`, :py:const:`KEYDOWN`, 
-                :py:const:`CURSORMOTION`, :py:const:`CURSORUP`, :py:const:`CURSORDOWN`, 
-                :py:const:`CURSOROVER` or :py:const:`CURSOROUT`.
+
+            One of the event types :py:const:`Event.KEY_UP`, :py:const:`Event.KEY_DOWN`,
+            :py:const:`Event.CURSOR_MOTION`, :py:const:`Event.CURSOR_UP`,
+            :py:const:`Event.CURSOR_DOWN`, :py:const:`Event.CURSOR_OVER` or
+            :py:const:`Event.CURSOR_OUT`.
 
             :param source:
 
@@ -345,10 +400,11 @@ This section describes the base classes for all node classes that libavg provide
             preserved.
 
             If :samp:`kill=True`, textures are not moved back. Event handlers for events
-            routed to this node are reset, all textures are deleted and the href is reset
-            to empty in this case, saving some time and making sure there are no 
-            references to the node left on the libavg side. :py:attr:`kill` should always
-            be set to :py:const:`True` if the node will not be used after the unlink.
+            routed to this node are reset, gesture recognizers disabled, all textures are
+            deleted and the href is reset to empty in this case, saving some time and
+            making sure there are no references to the node left on the libavg side.
+            :py:attr:`kill` should always be set to :py:const:`True` if the node will not
+            be used after the unlink.
     
 
     .. autoclass:: Publisher()

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine.
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -29,14 +29,11 @@
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <vector>
-#include <map>
-#include <cstring>
-#include <iostream>
 #include <fstream>
 
 using namespace std;

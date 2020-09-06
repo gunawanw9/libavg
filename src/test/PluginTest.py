@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 import platform
 
 from libavg import player
-from testcase import *
+from libavg.testcase import *
 
 class PluginTestCase(AVGTestCase):
     def __init__(self, testFuncName):
@@ -32,7 +32,9 @@ class PluginTestCase(AVGTestCase):
     def testColorNodePlugin(self):
         def loadPlugin():
             if platform.system() != 'Windows':
-                if not(os.getenv('srcdir') in ('.', None)):
+                if os.getenv('srcdir') in ('.', None):
+                    player.pluginPath += ":../.."
+                else:
                     # make distcheck
                     player.pluginPath += ":../../_build/src/test/plugin/.libs"
             player.loadPlugin("colorplugin")

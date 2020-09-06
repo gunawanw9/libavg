@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -93,7 +93,7 @@ class Slide(avg.ImageNode):
         size = scaleMin(s, self.size + avg.Point2D(abs(dx), abs(dy)) * 2.0)
         pos = self.pos + avg.Point2D(dx, dy) + (self.size - size) * 0.5
         # start in-transition
-        avg.fadeIn(self, TRANS_INTERVAL)
+        avg.Anim.fadeIn(self, TRANS_INTERVAL)
         # start move/scale animation
         avg.ParallelAnim([
                 avg.LinearAnim(self, 'size', ANIM_INTERVAL, self.size, size),
@@ -101,7 +101,7 @@ class Slide(avg.ImageNode):
 
     def hide(self):
         # start out-transition, notify subscribers when finished
-        avg.fadeOut(self, TRANS_INTERVAL,
+        avg.Anim.fadeOut(self, TRANS_INTERVAL,
                 lambda: self.notifySubscribers(Slide.HIDE_DONE, [self]))
 
 

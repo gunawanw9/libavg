@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ FWCamera::FWCamera(unsigned long long guid, int unit, bool bFW800, IntPoint size
 
     if (err != DC1394_SUCCESS) {
         AVG_LOG_ERROR("Unable to look for cameras");
-#ifdef linux
+#ifdef __linux__
         AVG_LOG_ERROR("Please check");
         AVG_LOG_ERROR("  - if the kernel modules `ieee1394',`raw1394' and \
                 `ohci1394' are loaded");

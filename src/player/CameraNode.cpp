@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 #include "CameraNode.h"
 #include "OGLSurface.h"
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 #include "Canvas.h"
 
 #include "../base/Logger.h"
@@ -61,7 +62,7 @@ void CameraNode::registerType()
         .addArg(Arg<float>("framerate", 15))
         .addArg(Arg<int>("capturewidth", 640))
         .addArg(Arg<int>("captureheight", 480))
-        .addArg(Arg<string>("pixelformat", "RGB"))
+        .addArg(Arg<string>("pixelformat", "R8G8B8"))
         .addArg(Arg<int>("brightness", -1))
         .addArg(Arg<int>("exposure", -1))
         .addArg(Arg<int>("sharpness", -1))
@@ -73,8 +74,9 @@ void CameraNode::registerType()
     TypeRegistry::get()->registerType(def);
 }
 
-CameraNode::CameraNode(const ArgList& args)
-    : m_bIsPlaying(false),
+CameraNode::CameraNode(const ArgList& args, const string& sPublisherName)
+    : RasterNode(sPublisherName),
+      m_bIsPlaying(false),
       m_FrameNum(0),
       m_bAutoUpdateCameraImage(true),
       m_bNewBmp(false),
@@ -305,9 +307,8 @@ void CameraNode::open()
     setViewport(-32767, -32767, -32767, -32767);
     PixelFormat pf = getPixelFormat();
     IntPoint size = getMediaSize();
-    bool bMipmap = getMaterial().getUseMipmaps();
     
-    m_pTex = GLContextManager::get()->createTexture(size, pf, bMipmap);
+    m_pTex = GLContextManager::get()->createTexture(size, pf, getMipmap());
     getSurface()->create(pf, m_pTex);
     m_bNewSurface = true;
     newSurface();
@@ -336,43 +337,45 @@ static ProfilingZoneID CameraDownloadProfilingZone("Camera tex download");
 void CameraNode::preRender(const VertexArrayPtr& pVA, bool bIsParentActive, 
         float parentEffectiveOpacity)
 {
-    Node::preRender(pVA, bIsParentActive, parentEffectiveOpacity);
-    if (m_bAutoUpdateCameraImage) {
-        ScopeTimer Timer(CameraFetchImage);
-        updateToLatestCameraImage();
-    }
-    if (isVisible()) {
-        if (m_bNewBmp) {
-            ScopeTimer Timer(CameraDownloadProfilingZone);
-            m_FrameNum++;
-            GLContextManager::get()->scheduleTexUpload(m_pTex, m_pCurBmp);
-            scheduleFXRender();
-            m_bNewBmp = false;
-        } else if (m_bNewSurface) {
-            BitmapPtr pBmp;
-            PixelFormat pf = getPixelFormat();
-            pBmp = BitmapPtr(new Bitmap(getMediaSize(), pf));
-            if (pf == B8G8R8X8 || pf == B8G8R8A8) {
-                FilterFill<Pixel32>(Pixel32(0,0,0,255)).applyInPlace(pBmp);
-            } else if (pf == I8) {
-                FilterFill<Pixel8>(0).applyInPlace(pBmp);
-            } 
-            GLContextManager::get()->scheduleTexUpload(m_pTex, pBmp);
-            scheduleFXRender();
+    AreaNode::preRender(pVA, bIsParentActive, parentEffectiveOpacity);
+    if (m_bIsPlaying) {
+        if (m_bAutoUpdateCameraImage) {
+            ScopeTimer Timer(CameraFetchImage);
+            updateToLatestCameraImage();
         }
-        m_bNewSurface = false;
-    }
+        if (isVisible()) {
+            if (m_bNewBmp) {
+                ScopeTimer Timer(CameraDownloadProfilingZone);
+                m_FrameNum++;
+                GLContextManager::get()->scheduleTexUpload(m_pTex, m_pCurBmp);
+                scheduleFXRender();
+                m_bNewBmp = false;
+            } else if (m_bNewSurface) {
+                BitmapPtr pBmp;
+                PixelFormat pf = getPixelFormat();
+                pBmp = BitmapPtr(new Bitmap(getMediaSize(), pf));
+                if (pf == B8G8R8X8 || pf == B8G8R8A8) {
+                    FilterFill<Pixel32>(Pixel32(0,0,0,255)).applyInPlace(pBmp);
+                } else if (pf == I8) {
+                    FilterFill<Pixel8>(0).applyInPlace(pBmp);
+                }
+                GLContextManager::get()->scheduleTexUpload(m_pTex, pBmp);
+                scheduleFXRender();
+            }
+            m_bNewSurface = false;
+        }
 
-    calcVertexArray(pVA);
+        calcVertexArray(pVA);
+    }
 }
 
 static ProfilingZoneID CameraProfilingZone("Camera::render");
 
-void CameraNode::render()
+void CameraNode::render(GLContext* pContext, const glm::mat4& transform)
 {
     if (m_bIsPlaying) {
         ScopeTimer Timer(CameraProfilingZone);
-        blt32();
+        blt32(pContext, transform);
     }
 }
 

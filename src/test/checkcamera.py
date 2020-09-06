@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@ from libavg import *
 import camcfgs
 import optparse
 
-from testcase import *
+from libavg.testcase import *
 
 def parseCmdLine():
     global g_TestParams
@@ -83,7 +83,7 @@ class CameraTestCase(AVGTestCase):
 
     def testIllegalFormat(self):
         self.loadEmptyScene()
-        self.assertRaises(RuntimeError, (lambda: self.__openCamera())
+        self.assertRaises(RuntimeError, (lambda: self.__openCamera()))
 
     def testCreateDelete(self):
         # Create and delete without ever calling play.
@@ -92,9 +92,7 @@ class CameraTestCase(AVGTestCase):
 
     def testParams(self):
         def buildParamActionList(testCfg):
-            actions = []
-            actions.append(setDefaultParams)
-            actions.append(None)
+            actions = [setDefaultParams, None]
             for val in testCfg.testValues:
                 actions.append(lambda paramName=testCfg.name, val=val: 
                         setCamParam(paramName, val))
@@ -122,10 +120,8 @@ class CameraTestCase(AVGTestCase):
             bmp = self.cam.getBitmap()
             self.camBmps.append(bmp)
             if isColorParam(param):
-                colour = []
-                colour.append(bmp.getChannelAvg(0))
-                colour.append(bmp.getChannelAvg(1))
-                colour.append(bmp.getChannelAvg(2))
+                colour = [bmp.getChannelAvg(0), bmp.getChannelAvg(1),
+                    bmp.getChannelAvg(2)]
                 self.averages.append(colour)
             else:    
                 self.averages.append(bmp.getAvg())
@@ -135,14 +131,13 @@ class CameraTestCase(AVGTestCase):
             def saveCamImages():
 #                print
 #                print "Average image brightnesses: ",minAverages, medAverages, maxAverages
-                dir = AVGTestCase.getImageResultDir()
+                imageDir = AVGTestCase.getImageResultDir()
                 for (i, category) in enumerate(("min", "med", "max")):
-                    self.camBmps[i].save(dir+"/cam"+testCfg.name+category+".png")
+                    self.camBmps[i].save(imageDir+"/cam"+testCfg.name+category+".png")
 
             minAverages = self.averages[0]
             medAverages = self.averages[1]
             maxAverages = self.averages[2]
-            ok = False
             if isColorParam(testCfg.name):
                 pass
             else:
@@ -189,7 +184,7 @@ class CameraTestCase(AVGTestCase):
                 avg.player.stop()
             else:
                 action = self.actions[self.lastCameraFrame]
-                if action != None:
+                if action is not None:
                     action()
 
     def __dumpFormat(self):

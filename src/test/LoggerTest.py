@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -23,8 +23,7 @@ import StringIO
 import logging
 
 from libavg import logger
-
-from testcase import *
+from libavg.testcase import *
 
 
 class LoggerTestCase(AVGTestCase):
@@ -44,6 +43,9 @@ class LoggerTestCase(AVGTestCase):
 
     def tearDown(self):
         self.pyLogger.removeHandler(self.hdlr)
+        logger.removeSink(self.pyLogger)
+        self.stream = None
+        self.hdlr = None
 
     def _assertMsg(self):
         self.stream.flush()

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -56,9 +56,9 @@ PluginManager& PluginManager::get()
 
 PluginManager::PluginManager()
 {
-    setSearchPath(string("."PATH_DELIMITER) +
-            "./plugin"PATH_DELIMITER + 
-            "./plugin/.libs"PATH_DELIMITER +
+    setSearchPath(string("." PATH_DELIMITER) +
+            "./plugin" PATH_DELIMITER + 
+            "./plugin/.libs" PATH_DELIMITER +
             getPath(getAvgLibPath()) + "plugin");
 }
 

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -24,10 +24,7 @@
 
 #include "../api.h"
 #include "VertexData.h"
-#include "Pixel32.h"
 #include "OGLHelper.h"
-
-#include "../base/GLMHelper.h"
 
 #include <boost/shared_ptr.hpp>
 #include <map>
@@ -44,12 +41,12 @@ public:
     static const unsigned COLOR_INDEX;
 
     VertexArray(int reserveVerts = 0, int reserveIndexes = 0);
-    void initForGLContext();
+    void initForGLContext(GLContext* pContext);
     virtual ~VertexArray();
 
-    void update();
-    void activate();
-    void draw();
+    void update(GLContext* pContext);
+    void activate(GLContext* pContext);
+    void draw(GLContext* pContext);
     void draw(unsigned startIndex, unsigned numIndexes, unsigned startVertex,
             unsigned numVertexes);
 

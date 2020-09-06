@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # libavg - Media Playback Engine.
-# Copyright (C) 2003-2014 Ulrich von Zadow
+# Copyright (C) 2003-2020 Ulrich von Zadow
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 #
 
 from libavg import avg, player
-from testcase import *
+from libavg.testcase import *
 
 def dumpMouseEvent(Event):
     print Event
@@ -51,11 +51,11 @@ class EventTestCase(AVGTestCase):
 
     def testKeyEvents(self):
         def onKeyDown(event):
-            if event.keystring == 'A' and event.keycode == 65 and event.unicode == 65:
+            if event.keyname == 'A' and event.text == "A":
                 self.keyDownCalled = True
         
         def onKeyUp(event):
-            if event.keystring == 'A' and event.keycode == 65 and event.unicode == 65:
+            if event.keyname == 'A':
                 self.keyUpCalled = True
        
         def onSubscribeKeyDown(event):
@@ -70,11 +70,11 @@ class EventTestCase(AVGTestCase):
         player.subscribe(avg.Player.KEY_DOWN, onSubscribeKeyDown)
         player.subscribe(avg.Player.KEY_UP, onSubscribeKeyUp)
         self.start(False,
-                (lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, 65, "A", 65, 
-                        avg.KEYMOD_NONE),
+                (lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, "A",
+                        avg.KEYMOD_NONE, "A"),
                  lambda: self.assert_(self.keyDownCalled and self.subscribeKeyDownCalled),
-                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_UP, 65, 65, "A", 65, 
-                        avg.KEYMOD_NONE),
+                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_UP, 65, "A",
+                        avg.KEYMOD_NONE, ""),
                  lambda: self.assert_(self.keyUpCalled and self.subscribeKeyUpCalled)
                 ))
 
@@ -93,7 +93,6 @@ class EventTestCase(AVGTestCase):
         self.start(False,
                 (# down, getMouseState(), move, up.
                  # events are inside img1 but outside img2.
-                 lambda: self.assert_(not(player.isMultitouchAvailable())),
                  lambda: self._sendMouseEvent(avg.Event.CURSOR_DOWN, 10, 10),
                  lambda: handlerTester1.assertState(
                         (avg.Node.CURSOR_DOWN, avg.Node.CURSOR_OVER)),
@@ -115,7 +114,6 @@ class EventTestCase(AVGTestCase):
         
         self.start(False,
                 (# down, move, up.
-                 lambda: self.assert_(not(player.isMultitouchAvailable())),
                  lambda: self._sendTangibleEvent(1, 3, avg.Event.CURSOR_DOWN, 10, 10),
                  lambda: handlerTester1.assertState(
                         (avg.Node.TANGIBLE_DOWN, avg.Node.TANGIBLE_OVER)),
@@ -283,7 +281,7 @@ class EventTestCase(AVGTestCase):
             self.assert_(not(self.img.isSubscribed(avg.Node.CURSOR_DOWN, onDown)))
             self.assert_(self.img.getNumSubscribers(avg.Node.CURSOR_DOWN) == 0)
             self.downCalled = False
-            self.assertRaises(RuntimeError,
+            self.assertRaises(avg.Exception,
                     lambda: self.img.unsubscribe(avg.Node.CURSOR_DOWN, onDown))
 
         def initUnsubscribeInEvent(useMessageID):
@@ -293,11 +291,11 @@ class EventTestCase(AVGTestCase):
         def onDownUnsubscribe(event, useMessageID):
             if useMessageID:
                 self.img.unsubscribe(avg.Node.CURSOR_DOWN, self.subscriberID)
-                self.assertRaises(RuntimeError, lambda: 
+                self.assertRaises(avg.Exception, lambda: 
                         self.img.unsubscribe(avg.Node.CURSOR_DOWN, self.subscriberID))
             else:
                 self.img.unsubscribe(self.subscriberID)
-                self.assertRaises(RuntimeError,
+                self.assertRaises(avg.Exception,
                         lambda: self.img.unsubscribe(self.subscriberID))
             self.downCalled = True
 
@@ -311,9 +309,9 @@ class EventTestCase(AVGTestCase):
         self.img = avg.ImageNode(pos=(0,0), href="rgb24-65x65.png", parent=root)
         self.img.subscribe(avg.Node.CURSOR_DOWN, onDown)
         self.assertRaises(Exception, lambda: self.img.subscribe(23, onDown))
-        self.assertRaises(RuntimeError,
+        self.assertRaises(avg.Exception,
                 lambda: self.img.subscribe(avg.Node.CURSOR_DOWN, 23))
-        self.assertRaises(RuntimeError,
+        self.assertRaises(avg.Exception,
                 lambda: self.img.unsubscribe(avg.Node.CURSOR_DOWN, 23))
         self.start(False,
                 (lambda: self.fakeClick(10,10),
@@ -364,6 +362,20 @@ class EventTestCase(AVGTestCase):
         def onSecondSubscribeDown():
             self.downCalled[1] = True
 
+        def setupCallableUnsubscribe():
+            self.msgIDs = []
+            for i in range(0, 2):
+                self.msgIDs.append(self.img.subscribe(avg.Node.CURSOR_DOWN,
+                        onUnsubscribeCallableDown))
+
+        def onUnsubscribeCallableDown(event):
+            self.assertRaises(avg.Exception,
+                    lambda: self.img.unsubscribe(avg.Node.CURSOR_DOWN,
+                            onUnsubscribeCallableDown))
+            for j in range(0,2):
+                self.img.unsubscribe(avg.Node.CURSOR_DOWN, self.msgIDs[j])
+
+
         def assertDownsCalled(expectedState):
             self.assert_(self.downCalled == expectedState)
 
@@ -373,13 +385,18 @@ class EventTestCase(AVGTestCase):
         self.start(False,
                 (# Subscribe twice to an event, unsubscribe both during processing of the 
                  # first. Second shouldn't be called anymore.
-                 lambda: setupUnsubscribe(),
+                 setupUnsubscribe,
                  lambda: self.fakeClick(10,10),
                  assertCorrectUnsubscribe,
 
+                 # Subscribe twice to an event. unsubscribe using callable should
+                 # fail because it's unclear which subscriber should be unsubscribed.
+                 setupCallableUnsubscribe,
+                 lambda: self.fakeClick(10,10),
+
                  # Subscribe to an event, subscribe again during event processing.
                  # The second one shouldn't be called immediately.
-                 lambda: setupSubscribe(),
+                 setupSubscribe,
                  lambda: self.fakeClick(10,10),
                  lambda: assertDownsCalled([True, False]),
                  lambda: self.fakeClick(10,10),
@@ -388,7 +405,7 @@ class EventTestCase(AVGTestCase):
 
     def testPublisherAutoDelete(self):
        
-        class TestSubscriber():
+        class TestSubscriber(object):
             def __init__(self):
                 self.__downCalled = False
 
@@ -574,7 +591,7 @@ class EventTestCase(AVGTestCase):
 
         def releaseTooMuch():
             self.img.releaseEventCapture()
-            self.assertRaises(RuntimeError, self.img.releaseEventCapture)
+            self.assertRaises(avg.Exception, self.img.releaseEventCapture)
 
         self.mouseDownCalled = False
         self.mainMouseDownCalled = False
@@ -755,6 +772,16 @@ class EventTestCase(AVGTestCase):
                  lambda: player.enableMouse(True),
                 ))
 
+    def testMouseWheel(self):
+        helper = player.getTestHelper()
+        root = self.loadEmptyScene()
+        img = avg.ImageNode(pos=(0,0), href="rgb24-65x65.png", parent=root)
+        handlerTester = NodeHandlerTester(self, img)
+        self.start(False,
+                (lambda: helper.fakeMouseWheelEvent((10,10), (0,1)),
+                 lambda: handlerTester.assertState((avg.Node.MOUSE_WHEEL,))
+                ))
+
     def testEventErr(self):
         def onErrMouseOver(Event):
             undefinedFunction()
@@ -791,12 +818,12 @@ class EventTestCase(AVGTestCase):
         self.start(False,
                 (lambda: self.fakeClick(10, 10),
                  lambda: self.assert_(self.ehookMouseEvent),
-                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, 65, "A", 65, 0),
+                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, "A", 0, "A"),
                  lambda: self.assert_(self.ehookKeyboardEvent),
                  cleanup,
                  lambda: self.fakeClick(10, 10),
                  lambda: self.assert_(not self.ehookMouseEvent),
-                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, 65, "A", 65, 0),
+                 lambda: Helper.fakeKeyEvent(avg.Event.KEY_DOWN, 65, "A", 0, "A"),
                  lambda: self.assert_(not self.ehookKeyboardEvent),
                 ))
         
@@ -926,7 +953,7 @@ class EventTestCase(AVGTestCase):
         def onContactMotion(event):
             contact = event.contact
             contact.unsubscribe(self.contactID)
-            self.assertRaises(RuntimeError, lambda: contact.unsubscribe(self.contactID))
+            self.assertRaises(avg.Exception, lambda: contact.unsubscribe(self.contactID))
             self.numContactCallbacks += 1
        
         root = self.loadEmptyScene()
@@ -1071,7 +1098,27 @@ class EventTestCase(AVGTestCase):
         self.rect.subscribe(self.rect.SIZE_CHANGED, onResize)
         self.rect.size=(100,100)
         self.assert_(self.messageReceived)
-        
+
+    def testDivSizeChanged(self):
+
+        def onResize(newSize):
+            self.messageReceived = True
+
+        def setSize():
+            self.div.size = (10,10)
+            self.assert_(self.messageReceived)
+
+        self.messageReceived = False
+        root = self.loadEmptyScene()
+        self.div = avg.DivNode(parent=root)
+        self.div.subscribe(self.div.SIZE_CHANGED, onResize)
+        avg.RectNode(size=(100,100), parent=self.div)
+        self.start(False,
+                (None,
+                 lambda: self.assert_(not(self.messageReceived)),
+                 setSize,
+                ))
+
 
 def eventTestSuite(tests):
     availableTests = (
@@ -1094,6 +1141,7 @@ def eventTestSuite(tests):
             "testEventCapture",
             "testMouseOver",
             "testMouseDisable",
+            "testMouseWheel",
             "testEventErr",
             "testEventHook",
             "testException",
@@ -1105,6 +1153,7 @@ def eventTestSuite(tests):
             "testWordsSizeChanged",
             "testVideoSizeChanged",
             "testRectSizeChanged",
+            "testDivSizeChanged",
             )
     return createAVGTestSuite(availableTests, EventTestCase, tests)
 

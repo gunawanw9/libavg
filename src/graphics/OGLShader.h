@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@
 #include "../api.h"
 #include "OGLHelper.h"
 #include "GLShaderParam.h"
-#include "Pixel32.h"
 
 #include "../base/GLMHelper.h"
 
@@ -87,7 +86,7 @@ class AVG_API OGLShader {
         std::string m_sFragProgram;
 
         std::vector<GLShaderParamPtr> m_pParams;
-        Mat4fGLShaderParamPtr m_pTransformParam;
+        Mat4fGLShaderParam m_TransformParam;
 
         // Dumb pointer for speed reasons.
         ShaderRegistry* m_pShaderRegistry;

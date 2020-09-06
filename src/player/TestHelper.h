@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -51,13 +51,13 @@ class AVG_API TestHelper : public InputDevice
                 bool leftButtonState, bool middleButtonState, 
                 bool rightButtonState,
                 int xPosition, int yPosition, int button);
+        void fakeMouseWheelEvent(const glm::vec2& pos, const glm::vec2& motion);
         void fakeTouchEvent(int id, Event::Type eventType, Event::Source source,
                 const glm::vec2& pos, const glm::vec2& speed=glm::vec2(0, 0));
         void fakeTangibleEvent(int id, int markerID, Event::Type eventType, 
                 const glm::vec2& pos, const glm::vec2& speed, float orientation);
-        void fakeKeyEvent(Event::Type eventType,
-                unsigned char scanCode, int keyCode, 
-                const std::string& keyString, int unicode, int modifiers);
+        void fakeKeyEvent(Event::Type eventType, unsigned char scanCode, 
+                const std::string& sKeyString, int modifiers, const std::string& sText);
         void dumpObjects();
         TypeMap getObjectCount();
 

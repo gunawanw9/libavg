@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 #include "../graphics/FBO.h"
 #include "../graphics/GPURGB2YUVFilter.h"
 #include "../graphics/Filterfill.h"
+#include "../graphics/GLContext.h"
 #include "../base/StringHelper.h"
 
 #include <boost/bind.hpp>
@@ -64,7 +65,7 @@ VideoWriter::VideoWriter(CanvasPtr pCanvas, const string& sOutFileName, int fram
     }
 #ifdef WIN32
     int fd = _open(m_sOutFileName.c_str(), O_RDWR | O_CREAT, _S_IREAD | _S_IWRITE);
-#elif defined linux
+#elif defined __linux__
     int fd = open64(m_sOutFileName.c_str(), O_RDWR | O_CREAT, S_IRWXU);
 #else
     int fd = open(m_sOutFileName.c_str(), O_RDWR | O_CREAT, S_IRWXU);
@@ -89,7 +90,8 @@ VideoWriter::VideoWriter(CanvasPtr pCanvas, const string& sOutFileName, int fram
         GLContext* pOldContext = GLContext::getCurrent();
         m_pMainGLContext = pDisplayEngine->getWindow(0)->getGLContext();
         m_pMainGLContext->activate();
-        m_pFBO = dynamic_pointer_cast<OffscreenCanvas>(m_pCanvas)->getFBO();
+        m_pFBO = dynamic_pointer_cast<OffscreenCanvas>(m_pCanvas)->
+                getFBO(m_pMainGLContext);
         if (GLContext::getCurrent()->useGPUYUVConversion()) {
             m_pFilter = GPURGB2YUVFilterPtr(new GPURGB2YUVFilter(m_FrameSize));
         }
@@ -172,6 +174,11 @@ int VideoWriter::getQMax() const
     return m_QMax;
 }
 
+bool VideoWriter::getSyncToPlayback() const
+{
+    return m_bSyncToPlayback;
+}
+
 void VideoWriter::onFrameEnd()
 {
     // The VideoWriter handles OffscreenCanvas and MainCanvas differently:
@@ -218,8 +225,8 @@ void VideoWriter::getFrameFromFBO()
         GLContext* pOldContext = GLContext::getCurrent();
         m_pMainGLContext->activate();
         if (m_pFilter) {
-            m_pFilter->apply(m_pFBO->getTex());
-            FBOPtr pYUVFBO = m_pFilter->getFBO();
+            m_pFilter->apply(m_pMainGLContext, m_pFBO->getTex());
+            FBOPtr pYUVFBO = m_pFilter->getFBO(m_pMainGLContext);
             pYUVFBO->moveToPBO();
         } else {
             m_pFBO->moveToPBO();
@@ -236,14 +243,14 @@ void VideoWriter::getFrameFromPBO()
 {
     if (m_bFramePending) {
         BitmapPtr pBmp;
+        GLContext* pOldContext = GLContext::getCurrent();
+        m_pMainGLContext->activate();
         if (m_pFilter) {
-            pBmp = m_pFilter->getFBO()->getImageFromPBO();
+            pBmp = m_pFilter->getFBO(m_pMainGLContext)->getImageFromPBO();
         } else {
-            GLContext* pOldContext = GLContext::getCurrent();
-            m_pMainGLContext->activate();
             pBmp = m_pFBO->getImageFromPBO();
-            pOldContext->activate();
         }
+            pOldContext->activate();
         sendFrameToEncoder(pBmp);
         m_bFramePending = false;
     }

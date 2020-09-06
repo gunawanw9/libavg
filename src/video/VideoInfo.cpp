@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -42,8 +42,7 @@ VideoInfo::VideoInfo(string sContainerFormat, float duration, int bitrate, bool 
 }
 
 void VideoInfo::setVideoData(const IntPoint& size, const string& sPixelFormat,
-        int numFrames, float streamFPS, const string& sVCodec,
-        bool bUsesVDPAU, float duration)
+        int numFrames, float streamFPS, const string& sVCodec, float duration)
 {
     AVG_ASSERT(m_bHasVideo);
     m_Size = size;
@@ -51,7 +50,6 @@ void VideoInfo::setVideoData(const IntPoint& size, const string& sPixelFormat,
     m_NumFrames = numFrames;
     m_StreamFPS = streamFPS;
     m_sVCodec = sVCodec;
-    m_bUsesVDPAU = bUsesVDPAU;
     m_VideoDuration = duration;
 }
 
@@ -71,22 +69,17 @@ float getStreamFPS(AVStream* pStream)
     if (pStream->avg_frame_rate.den != 0) {
         fps = float(av_q2d(pStream->avg_frame_rate));
     }
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
-    if (fps == 0 && pStream->r_frame_rate.den != 0) {
-        fps = float(av_q2d(pStream->r_frame_rate));
-    }
-#endif
     if (fps == 0) { 
         float duration = float(pStream->duration)*float(av_q2d(pStream->time_base));
         fps = pStream->nb_frames/duration;
     }
     AVG_ASSERT(fps < 10000);
 /*
-    cerr << "getStreamFPS: fps= " << fps << endl;
-    cerr << "    r_frame_rate num: " << m_pVStream->r_frame_rate.num << ", den: " << m_pVStream->r_frame_rate.den << endl;
-    cerr << "    avg_frame_rate: num: " << m_pVStream->avg_frame_rate.num << ", den: " << m_pVStream->avg_frame_rate.den << endl;
-    cerr << "    numFrames= " << getNumFrames() << ", duration= " 
-                << getDuration(SS_VIDEO) << endl;
+    cerr << "getStreamFPS: fps=" << fps << endl;
+    cerr << "    r_frame_rate: num=" << pStream->r_frame_rate.num << ", den=" << pStream->r_frame_rate.den << endl;
+    cerr << "    avg_frame_rate: num=" << pStream->avg_frame_rate.num << ", den=" << pStream->avg_frame_rate.den << endl;
+    cerr << "    time_base: num=" << pStream->time_base.num << ", den=" << pStream->time_base.den << endl;
+    cerr << "    nb_frames=" << pStream->nb_frames << ", duration=" << pStream->duration << endl;
 */
     return fps;
 }

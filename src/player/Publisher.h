@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -69,6 +69,9 @@ public:
     void notifySubscribers(const std::string& sMsgName);
     template<class ARG_TYPE>
     void notifySubscribers(const std::string& sMsgName, const ARG_TYPE& arg);
+    template<class ARG1_TYPE, class ARG2_TYPE>
+    void notifySubscribers(const std::string& sMsgName, const ARG1_TYPE& arg1, 
+            const ARG2_TYPE& arg2);
     void notifySubscribersPy(MessageID messageID, const py::list& args);
 
     static MessageID genMessageID();
@@ -102,6 +105,22 @@ void Publisher::notifySubscribers(const std::string& sMsgName, const ARG_TYPE& a
         py::list args;
         py::object pyArg(arg);
         args.append(pyArg);
+        notifySubscribersPy(messageID, args);
+    }
+}
+
+template<class ARG1_TYPE, class ARG2_TYPE>
+void Publisher::notifySubscribers(const std::string& sMsgName, const ARG1_TYPE& arg1,
+        const ARG2_TYPE& arg2)
+{
+    MessageID messageID = m_pPublisherDef->getMessageID(sMsgName);
+    SubscriberInfoList& subscribers = safeFindSubscribers(messageID);
+    if (!subscribers.empty()) {
+        py::list args;
+        py::object pyArg1(arg1);
+        args.append(pyArg1);
+        py::object pyArg2(arg2);
+        args.append(pyArg2);
         notifySubscribersPy(messageID, args);
     }
 }

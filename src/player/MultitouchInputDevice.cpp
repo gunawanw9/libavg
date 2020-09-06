@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 #include "../base/Logger.h"
 #include "../base/ObjectCounter.h"
 #include "../base/Exception.h"
+#include "../base/ConfigMgr.h"
 
 using namespace std;
 
@@ -46,15 +47,11 @@ MultitouchInputDevice::MultitouchInputDevice(const DivNodePtr& pEventReceiverNod
         }
         m_TouchOffset = ConfigMgr::get()->getSizeOption("touch", "offset");
     }
+    m_pMutex = MutexPtr(new boost::mutex);
 }
 
 MultitouchInputDevice::~MultitouchInputDevice()
 {
-}
-
-void MultitouchInputDevice::start()
-{
-    m_pMutex = MutexPtr(new boost::mutex);
 }
 
 vector<EventPtr> MultitouchInputDevice::pollEvents()
@@ -122,8 +119,8 @@ glm::vec2 MultitouchInputDevice::getTouchArea() const
 
 IntPoint MultitouchInputDevice::getScreenPos(const glm::vec2& pos) const
 {
-        return IntPoint(int(pos.x * m_TouchArea.x + m_TouchOffset.x + 0.5),
-                        int(pos.y * m_TouchArea.y + m_TouchOffset.y) + 0.5);
+    return IntPoint(int(pos.x * m_TouchArea.x + m_TouchOffset.x + 0.5),
+            int(pos.y * m_TouchArea.y + m_TouchOffset.y) + 0.5);
 }
 
 boost::mutex& MultitouchInputDevice::getMutex()

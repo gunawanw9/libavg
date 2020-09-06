@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include "Player.h"
 
 #include "TypeDefinition.h"
+#include "TypeRegistry.h"
 
 #include "../base/FileHelper.h"
 #include "../base/Exception.h"
@@ -33,18 +34,20 @@ namespace avg {
 
 void CanvasNode::registerType()
 {
-    TypeDefinition def = TypeDefinition("canvasbase", "div", 
-            ExportedObject::buildObject<CanvasNode>);
+    TypeDefinition def = TypeDefinition("canvasbase", "div");
     TypeRegistry::get()->registerType(def);
 }
 
-CanvasNode::CanvasNode(const ArgList& args)
+CanvasNode::CanvasNode(const ArgList& args, const string& sPublisherName)
     : DivNode(args)
 {
     args.setMembers(this);
     if (getSize() == glm::vec2(0, 0)) {
         throw (Exception(AVG_ERR_OUT_OF_RANGE,
-                "<avg> and <canvas> node width and height attributes are mandatory."));
+                "AVGNode and CanvasNode size must be set."));
+    }
+    if (getSize().x < 0 || getSize().y < 0) {
+        throw Exception(AVG_ERR_OUT_OF_RANGE, "Negative size for canvas.");
     }
 }
 

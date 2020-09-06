@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -33,9 +33,8 @@
 #include "../graphics/GLContext.h"
 #include "../graphics/GLTexture.h"
 #include "../graphics/GLContextManager.h"
-#ifdef linux
+#ifdef __linux__
   #ifndef AVG_ENABLE_EGL
-  #include "../graphics/SecondaryGLXContext.h"
   #include <X11/Xlib.h>
   #endif
 #endif

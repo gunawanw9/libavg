@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,8 @@
 
 #include "../base/ObjectCounter.h"
 
+#include "../graphics/GPUChromaKeyFilter.h"
+
 #include <string>
 
 using namespace std;
@@ -31,7 +33,6 @@ namespace avg {
 
 ChromaKeyFXNode::ChromaKeyFXNode() 
     : FXNode(false),
-      m_sColorName("00FF00"),
       m_Color(0, 255, 0),
       m_HTolerance(0.0),
       m_STolerance(0.0),
@@ -55,16 +56,15 @@ void ChromaKeyFXNode::disconnect()
 }
     
 
-void ChromaKeyFXNode::setColor(const std::string& sColorName)
+void ChromaKeyFXNode::setColor(const Color& color)
 {
-    m_sColorName = sColorName;
-    m_Color = colorStringToColor(m_sColorName);
+    m_Color = color;
     updateFilter();
 }
 
-const std::string& ChromaKeyFXNode::getColor() const
+const Color& ChromaKeyFXNode::getColor() const
 {
-    return m_sColorName;
+    return m_Color;
 }
 
 void ChromaKeyFXNode::setHTolerance(float tolerance)

@@ -1,6 +1,6 @@
 //
 //  libavg - Media Playback Engine. 
-//  Copyright (C) 2003-2014 Ulrich von Zadow
+//  Copyright (C) 2003-2020 Ulrich von Zadow
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 #define _MouseEvent_h_
 
 #include "../api.h"
-#include "Event.h"
+
 #include "CursorEvent.h"
 
 namespace avg {
@@ -36,20 +36,17 @@ class AVG_API MouseEvent : public CursorEvent {
                 int when=-1);
         virtual ~MouseEvent();
         
-        //REFACTORME: get*ButtonState -> getButtonState(num=*)
         bool getLeftButtonState() const;
         bool getMiddleButtonState() const;
         bool getRightButtonState() const;
         bool isAnyButtonPressed() const;
         int getButton() const;
-        virtual CursorEventPtr cloneAs(Type EventType) const;
+        virtual CursorEventPtr copy() const;
         virtual void trace();
         static const long NO_BUTTON=0;
         static const long LEFT_BUTTON=1;
         static const long RIGHT_BUTTON=2;
         static const long MIDDLE_BUTTON=3;
-        static const long WHEELUP_BUTTON=4;
-        static const long WHEELDOWN_BUTTON=5;
 
     private:
         bool m_LeftButtonState;
